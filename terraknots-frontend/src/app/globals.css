@@ -1,0 +1,88 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Poppins:wght@300;400;500;600;700&family=Dancing+Script:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary: #C4A882;
+  --secondary: #8B7355;
+  --accent: #A8B5A2;
+  --terracotta: #D4A574;
+  --background: #F5F0EB;
+  --white: #FFFFFF;
+  --dark-text: #2C2C2C;
+  --light-text: #6B6B6B;
+}
+
+@layer base {
+  body {
+    @apply bg-background text-dark font-body;
+    scroll-behavior: smooth;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading text-dark;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply px-6 py-3 rounded-full font-medium transition-all duration-300 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  
+  .btn-primary {
+    @apply btn bg-primary text-white hover:bg-secondary shadow-md hover:shadow-lg;
+  }
+  
+  .btn-secondary {
+    @apply btn bg-white text-primary border border-primary hover:bg-background;
+  }
+  
+  .btn-terracotta {
+    @apply btn bg-terracotta text-white hover:opacity-90 shadow-md;
+  }
+  
+  .card {
+    @apply bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow duration-300;
+  }
+  
+  .input-field {
+    @apply w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all;
+  }
+}
+
+/* Custom transitions and animations */
+.page-transition {
+  @apply transition-all duration-500 ease-in-out;
+}
+
+.glass {
+  @apply bg-white bg-opacity-70 backdrop-blur-md;
+}
+
+/* Texture overlay */
+.texture-bg::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.05;
+  pointer-events: none;
+  background-image: url("https://www.transparenttextures.com/patterns/natural-paper.png");
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-background;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-primary/40 rounded-full hover:bg-primary/60;
+}
