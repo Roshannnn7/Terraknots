@@ -80,6 +80,25 @@ exports.getDashboardStats = async (req, res, next) => {
                 };
             })
         );
+        
+        // Month by month revenue for high-end dashboard
+        const monthlyRevenueRaw = await Order.aggregate([
+            { $match: { paymentStatus: 'paid' } },
+            {
+                $group: {
+                    _id: { $month: "$createdAt" },
+                    revenue: { $sum: "$totalAmount" },
+                    orderCount: { $sum: 1 }
+                }
+            },
+            { $sort: { "_id": 1 } }
+        ]);
+        
+        const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        const monthlyRevenue = monthlyRevenueRaw.map(r => ({
+           month: monthNames[r._id - 1],
+           revenue: r.revenue
+        }));
 
         res.status(200).json({
             success: true,
@@ -94,6 +113,7 @@ exports.getDashboardStats = async (req, res, next) => {
                 lowStockProducts,
                 topSellingProducts: populatedTopProducts,
                 dailyRevenue,
+                monthlyRevenue
             },
         });
     } catch (error) {

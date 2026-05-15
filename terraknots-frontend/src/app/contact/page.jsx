@@ -82,7 +82,7 @@ const ContactPage = () => {
                                         </div>
                                         <div>
                                             <h4 className="font-heading font-bold text-dark text-xl">Call / WhatsApp</h4>
-                                            <p className="text-light">+91 XXXXXXXXXX</p>
+                                            <p className="text-light">+91 9035999354</p>
                                             <p className="text-xs text-primary font-bold uppercase tracking-widest mt-1">Mon - Sat | 10am - 7pm</p>
                                         </div>
                                     </div>
@@ -104,7 +104,7 @@ const ContactPage = () => {
                                         Quick WhatsApp Chat
                                     </h4>
                                     <p className="text-sm text-light">Need a faster response? Text us directly on WhatsApp for quick inquiries about product availability or custom orders.</p>
-                                    <a href="#" className="inline-block px-8 py-3 bg-[#25D366] text-white rounded-full font-bold text-sm shadow-lg shadow-[#25D366]/20 transform transition hover:scale-105 active:scale-95">
+                                    <a href="https://wa.me/919035999354" className="inline-block px-8 py-3 bg-[#25D366] text-white rounded-full font-bold text-sm shadow-lg shadow-[#25D366]/20 transform transition hover:scale-105 active:scale-95">
                                         Chat on WhatsApp
                                     </a>
                                 </div>

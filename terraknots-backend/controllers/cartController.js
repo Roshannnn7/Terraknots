@@ -100,7 +100,9 @@ exports.updateCartItem = async (req, res, next) => {
             });
         }
 
-        const item = cart.items.id(req.params.itemId);
+        const item = cart.items.find(i => 
+            (i.product._id ? i.product._id.toString() : i.product.toString()) === req.params.itemId
+        );
 
         if (!item) {
             return res.status(404).json({
@@ -110,7 +112,9 @@ exports.updateCartItem = async (req, res, next) => {
         }
 
         if (quantity <= 0) {
-            cart.items.pull(req.params.itemId);
+            cart.items = cart.items.filter(i => 
+                (i.product._id ? i.product._id.toString() : i.product.toString()) !== req.params.itemId
+            );
         } else {
             if (quantity > item.product.stock) {
                 return res.status(400).json({
@@ -147,7 +151,9 @@ exports.removeFromCart = async (req, res, next) => {
             });
         }
 
-        cart.items.pull(req.params.itemId);
+        cart.items = cart.items.filter(i => 
+            (i.product._id ? i.product._id.toString() : i.product.toString()) !== req.params.itemId
+        );
         await cart.save();
         await cart.populate('items.product');
 

@@ -153,8 +153,8 @@ const orderSchema = new mongoose.Schema(
     }
 );
 
-// Generate unique order ID before saving
-orderSchema.pre('save', async function (next) {
+// Generate unique order ID before validation
+orderSchema.pre('validate', async function (next) {
     if (!this.orderId) {
         const count = await mongoose.model('Order').countDocuments();
         this.orderId = `TK-${String(count + 10001).padStart(5, '0')}`;

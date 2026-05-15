@@ -1,75 +1,165 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import ProductCard from '../common/ProductCard';
+import { motion, AnimatePresence } from 'framer-motion';
+import { staggerContainer, staggerItem } from '@/lib/animations';
 import api from '@/lib/api';
-import { motion } from 'framer-motion';
+import ProductCard from '@/components/common/ProductCard';
 
-const FeaturedProducts = () => {
+const tabs = [
+    { label: 'All', value: '' },
+    { label: '🧶 Crochet', value: 'crochet' },
+    { label: '✨ Resin', value: 'resin' },
+    { label: '🏺 Clay', value: 'clay' },
+    { label: '🪴 Decor', value: 'decor' },
+];
+
+// Shimmer skeleton
+function ProductSkeleton() {
+    return (
+        <div className="rounded-2xl overflow-hidden bg-white" style={{ boxShadow: '0 4px 20px rgba(139,115,85,0.06)' }}>
+            <div className="skeleton aspect-[4/5]" />
+            <div className="p-4 space-y-3">
+                <div className="skeleton h-4 w-3/4 rounded-lg" />
+                <div className="skeleton h-3 w-1/3 rounded-lg" />
+                <div className="skeleton h-5 w-1/2 rounded-lg" />
+            </div>
+        </div>
+    );
+}
+
+export default function FeaturedProducts() {
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [activeTab, setActiveTab] = useState('');
 
     useEffect(() => {
         const fetchFeatured = async () => {
             try {
-                const { data } = await api.get('/products?featured=true&limit=4');
-                setProducts(data.products);
-            } catch (error) {
-                console.error('Error fetching featured products:', error);
+                setLoading(true);
+                const params = { featured: true, limit: 8 };
+                if (activeTab) params.category = activeTab;
+                const { data } = await api.get('/products', { params });
+                setProducts(data.products || []);
+            } catch (err) {
+                console.error('Failed to fetch featured products');
             } finally {
                 setLoading(false);
             }
         };
         fetchFeatured();
-    }, []);
-
-    if (loading) return null; // Or skeleton
+    }, [activeTab]);
 
     return (
-        <section className="py-24 bg-background overflow-hidden relative">
-            {/* Decorative text background */}
-            <div className="absolute top-1/2 left-0 -translate-y-1/2 text-[15rem] font-heading font-black text-dark/5 select-none pointer-events-none whitespace-nowrap -rotate-6">
-                Artisan Crafts • Unique Designs • Handmade
-            </div>
+        <section className="section relative overflow-hidden" style={{ backgroundColor: '#FAF8F5' }}>
+            {/* Texture overlay */}
+            <div className="absolute inset-0 bg-texture pointer-events-none" />
 
-            <div className="container mx-auto px-4 relative z-10">
-                <div className="text-center max-w-2xl mx-auto mb-16 space-y-4">
-                    <motion.span
-                        initial={{ opacity: 0 }}
-                        whileInView={{ opacity: 1 }}
-                        className="text-primary font-bold text-sm uppercase tracking-[0.3em]"
-                    >
-                        Handpicked for you
-                    </motion.span>
-                    <h2 className="text-4xl md:text-5xl font-heading font-bold text-dark">Our Best Sellers</h2>
-                    <p className="text-light">
-                        Each piece in our bestseller collection has been crafted hundreds of times, refined to perfection just for you.
+            <div className="container relative z-10">
+                {/* Header */}
+                <motion.div
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.7 }}
+                    className="section-header"
+                >
+                    <span className="section-label">Bestsellers</span>
+                    <h2 className="section-title">
+                        Our Most <span className="font-accent italic text-primary">Loved</span> Pieces ✨
+                    </h2>
+                    <p className="section-subtitle mt-4 max-w-xl mx-auto">
+                        Hand-picked favorites loved by our community — each one a tiny work of art.
                     </p>
-                </div>
+                </motion.div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                    {products.map((product, index) => (
-                        <motion.div
-                            key={product._id}
-                            initial={{ opacity: 0, scale: 0.9 }}
-                            whileInView={{ opacity: 1, scale: 1 }}
-                            viewport={{ once: true }}
-                            transition={{ delay: index * 0.1 }}
+                {/* Tabs */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.6, delay: 0.2 }}
+                    className="flex flex-wrap justify-center gap-2 mb-12"
+                >
+                    {tabs.map((tab) => (
+                        <button
+                            key={tab.value}
+                            onClick={() => setActiveTab(tab.value)}
+                            className={`relative px-5 py-2 rounded-full text-sm font-semibold transition-all duration-300 ${
+                                activeTab === tab.value
+                                    ? 'text-white'
+                                    : 'text-light hover:text-dark bg-white'
+                            }`}
+                            style={activeTab === tab.value ? { backgroundColor: '#C4A882', boxShadow: '0 4px 15px rgba(196,168,130,0.3)' } : {}}
                         >
-                            <ProductCard product={product} />
-                        </motion.div>
+                            {activeTab === tab.value && (
+                                <motion.div
+                                    layoutId="activeTab"
+                                    className="absolute inset-0 rounded-full"
+                                    style={{ backgroundColor: '#C4A882' }}
+                                    transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                                />
+                            )}
+                            <span className="relative z-10">{tab.label}</span>
+                        </button>
                     ))}
-                </div>
+                </motion.div>
 
-                <div className="mt-16 text-center">
-                    <Link href="/shop" className="btn-secondary px-8">
-                        Explore All Products
-                    </Link>
-                </div>
+                {/* Products Grid */}
+                <AnimatePresence mode="wait">
+                    {loading ? (
+                        <motion.div
+                            key="skeleton"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-5 md:gap-6"
+                        >
+                            {[...Array(8)].map((_, i) => <ProductSkeleton key={i} />)}
+                        </motion.div>
+                    ) : products.length > 0 ? (
+                        <motion.div
+                            key={activeTab}
+                            variants={staggerContainer}
+                            initial="initial"
+                            animate="animate"
+                            className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-5 md:gap-6"
+                        >
+                            {products.map((product) => (
+                                <motion.div key={product._id} variants={staggerItem}>
+                                    <ProductCard product={product} />
+                                </motion.div>
+                            ))}
+                        </motion.div>
+                    ) : (
+                        <motion.div
+                            key="empty"
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="text-center py-20"
+                        >
+                            <div className="text-6xl mb-4">🧶</div>
+                            <p className="text-light text-lg">No products in this category yet.</p>
+                            <p className="text-sm text-light mt-2">Check back soon — we're crafting something special!</p>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                {/* View All CTA */}
+                {!loading && products.length > 0 && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 0.6, delay: 0.3 }}
+                        className="text-center mt-14"
+                    >
+                        <a href="/shop" className="btn-primary px-10 py-4 text-base">
+                            View All Products →
+                        </a>
+                    </motion.div>
+                )}
             </div>
         </section>
     );
-};
-
-export default FeaturedProducts;
+}

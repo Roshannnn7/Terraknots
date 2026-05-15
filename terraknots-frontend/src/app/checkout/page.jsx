@@ -14,7 +14,8 @@ import { loadRazorpay } from '@/lib/loadRazorpay';
 import { toast } from 'react-toastify';
 import { motion } from 'framer-motion';
 import { CreditCard, Truck, ChevronRight, ShieldCheck, CheckCircle2 } from 'lucide-react';
-import confetti from 'canvas-confetti';
+import * as confettiModule from 'canvas-confetti';
+const confetti = confettiModule.default || confettiModule;
 
 const CheckoutPage = () => {
     const router = useRouter();
@@ -29,7 +30,7 @@ const CheckoutPage = () => {
         pincode: '',
         phone: ''
     });
-    const [paymentMethod, setPaymentMethod] = useState('Online');
+    const [paymentMethod, setPaymentMethod] = useState('UPI');
     const [settings, setSettings] = useState(null);
     const [couponCode, setCouponCode] = useState('');
     const [couponData, setCouponData] = useState(null);
@@ -75,13 +76,10 @@ const CheckoutPage = () => {
 
         let discount = 0;
         if (couponData) {
-            if (couponData.discountType === 'Percentage') {
-                discount = (total * couponData.discountAmount) / 100;
-                if (couponData.maxDiscount && discount > couponData.maxDiscount) {
-                    discount = couponData.maxDiscount;
-                }
+            if (couponData.discountType === 'percentage') {
+                discount = (total * couponData.discountValue) / 100;
             } else {
-                discount = couponData.discountAmount;
+                discount = couponData.discountValue;
             }
         }
 
@@ -315,19 +313,7 @@ const CheckoutPage = () => {
                                     <h3 className="text-xl font-heading font-bold text-dark">Payment Method</h3>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <button
-                                        onClick={() => setPaymentMethod('Online')}
-                                        className={`p-6 rounded-2xl border-2 text-left transition-all ${paymentMethod === 'Online' ? 'border-primary bg-primary/5' : 'border-gray-100 hover:border-primary/30'
-                                            }`}
-                                    >
-                                        <div className="flex justify-between items-center mb-2">
-                                            <CreditCard size={24} className={paymentMethod === 'Online' ? 'text-primary' : 'text-gray-400'} />
-                                            {paymentMethod === 'Online' && <CheckCircle2 size={20} className="text-primary" />}
-                                        </div>
-                                        <h4 className="font-bold text-dark text-sm">Pay Online</h4>
-                                        <p className="text-[10px] text-light mt-1">Razorpay (All options)</p>
-                                    </button>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
                                     <button
                                         onClick={() => setPaymentMethod('UPI')}
@@ -363,16 +349,18 @@ const CheckoutPage = () => {
                                         className="mt-6 p-6 bg-background rounded-2xl border border-primary/20 space-y-4"
                                     >
                                         <div className="flex flex-col md:flex-row items-center gap-6">
-                                            <div className="bg-white p-3 rounded-xl border border-gray-100">
-                                                {/* Simulated QR Code Area */}
-                                                <div className="w-32 h-32 bg-gray-50 flex items-center justify-center text-center p-2 rounded-lg">
-                                                    <p className="text-[10px] font-bold text-primary leading-tight">SCAN TO PAY<br />terraknots@upi</p>
-                                                </div>
+                                            <div className="bg-white p-2 rounded-xl border border-gray-100 flex flex-col items-center justify-center">
+                                                <img 
+                                                    src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(`upi://pay?pa=9035999354@axl&pn=TerraKnots&am=${calculateFinalTotal()}&cu=INR`)}`}
+                                                    alt="UPI QR Code" 
+                                                    className="w-32 h-32 object-contain"
+                                                />
+                                                <p className="text-[10px] font-bold text-primary leading-tight mt-2 text-center uppercase">SCAN TO PAY<br />9035999354@axl</p>
                                             </div>
                                             <div className="space-y-2 flex-1">
                                                 <h4 className="text-sm font-bold text-dark">How to pay:</h4>
                                                 <ol className="text-xs text-light space-y-1 list-decimal ml-4">
-                                                    <li>Scan the QR or pay to <span className="text-primary font-bold">terraknots@upi</span></li>
+                                                    <li>Scan the QR or pay to <span className="text-primary font-bold">9035999354@axl</span></li>
                                                     <li>Transfer <span className="text-primary font-bold">{formatPrice(calculateFinalTotal())}</span></li>
                                                     <li>Note the Transaction ID from your UPI app</li>
                                                     <li>Enter the ID below and click Place Order</li>
@@ -461,7 +449,11 @@ const CheckoutPage = () => {
                                     {couponData && (
                                         <div className="flex justify-between text-sm text-green-600 font-bold italic">
                                             <span>Discount</span>
-                                            <span>-{formatPrice(cartTotal + (settings?.shippingCharge || 49) - calculateFinalTotal() - (paymentMethod === 'COD' ? settings?.codCharge : 0))}</span>
+                                            <span>-{formatPrice(
+                                                couponData.discountType === 'percentage' 
+                                                ? (cartTotal * couponData.discountValue) / 100 
+                                                : couponData.discountValue
+                                            )}</span>
                                         </div>
                                     )}
                                     <div className="pt-6 border-t border-gray-100 flex justify-between items-center">

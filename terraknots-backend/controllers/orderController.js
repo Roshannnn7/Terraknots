@@ -2,7 +2,7 @@ const Order = require('../models/Order');
 const Product = require('../models/Product');
 const Coupon = require('../models/Coupon');
 const Settings = require('../models/Settings');
-const { sendEmail, getOrderConfirmationEmail } = require('../utils/sendEmail');
+const { sendEmail, getOrderConfirmationEmail, getAdminOrderNotificationEmail } = require('../utils/sendEmail');
 
 // @desc    Create new order
 // @route   POST /api/orders
@@ -129,13 +129,24 @@ exports.createOrder = async (req, res, next) => {
         // Send confirmation email
         try {
             const emailTo = req.user ? req.user.email : req.body.guestEmail;
+            const emailHtml = getOrderConfirmationEmail(order);
+            
+            // Send to customer
             await sendEmail({
                 email: emailTo,
                 subject: `Order Confirmation - ${order.orderId}`,
-                html: getOrderConfirmationEmail(order),
+                html: emailHtml,
+            });
+
+            // Send notification to Admin
+            const adminEmail = process.env.ADMIN_EMAIL || settings.contactEmail || process.env.SMTP_USER || 'terraknots.in@gmail.com';
+            await sendEmail({
+                email: adminEmail,
+                subject: `NEW ORDER RECEIVED! - ${order.orderId}`,
+                html: getAdminOrderNotificationEmail(order),
             });
         } catch (emailError) {
-            console.error('Error sending order confirmation email:', emailError);
+            console.error('Error sending order confirmation emails:', emailError);
         }
 
         res.status(201).json({

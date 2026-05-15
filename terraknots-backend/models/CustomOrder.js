@@ -1,52 +1,17 @@
 const mongoose = require('mongoose');
 
-const customOrderSchema = new mongoose.Schema(
-    {
-        name: {
-            type: String,
-            required: [true, 'Please provide your name'],
-            trim: true,
-        },
-        email: {
-            type: String,
-            required: [true, 'Please provide your email'],
-            trim: true,
-            match: [
-                /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
-                'Please provide a valid email',
-            ],
-        },
-        phone: {
-            type: String,
-            required: [true, 'Please provide your phone number'],
-            trim: true,
-        },
-        productType: {
-            type: String,
-            required: [true, 'Please select a product type'],
-            enum: ['Crochet', 'Resin', 'Clay', 'Other'],
-        },
-        description: {
-            type: String,
-            required: [true, 'Please describe what you want'],
-            maxlength: [2000, 'Description cannot exceed 2000 characters'],
-        },
-        budgetRange: {
-            type: String,
-            required: [true, 'Please select a budget range'],
-            enum: ['Under ₹299', '₹299-₹599', '₹599-₹999', 'Above ₹999'],
-        },
-        referenceImage: String,
-        preferredDeliveryDate: Date,
-        status: {
-            type: String,
-            enum: ['new', 'in_discussion', 'accepted', 'completed', 'rejected'],
-            default: 'new',
-        },
-    },
-    {
-        timestamps: true,
-    }
-);
+const CustomOrderSchema = new mongoose.Schema({
+  customer: { 
+    name: { type: String, required: true }, 
+    email: { type: String, required: true }, 
+    phone: { type: String, required: true } 
+  },
+  productType: { type: String, enum: ['Crochet', 'Resin', 'Clay', 'Other'], required: true },
+  description: { type: String, required: true },
+  budget: { type: String },
+  referenceImages: [String], // Cloudinary URLs
+  status: { type: String, default: 'New', enum: ['New', 'In Discussion', 'Accepted', 'Completed'] },
+  createdAt: { type: Date, default: Date.now }
+});
 
-module.exports = mongoose.model('CustomOrder', customOrderSchema);
+module.exports = mongoose.model('CustomOrder', CustomOrderSchema);

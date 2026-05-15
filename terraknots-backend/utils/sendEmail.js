@@ -1,17 +1,17 @@
 const nodemailer = require('nodemailer');
 
 const sendEmail = async (options) => {
-    const transporter = nodemailer.createTransporter({
+    const transporter = nodemailer.createTransport({
         host: process.env.SMTP_HOST,
         port: process.env.SMTP_PORT,
         auth: {
-            user: process.env.SMTP_EMAIL,
-            pass: process.env.SMTP_PASSWORD,
+            user: process.env.SMTP_USER,
+            pass: process.env.SMTP_PASS,
         },
     });
 
     const message = {
-        from: `${process.env.STORE_NAME || 'TerraKnots'} <${process.env.SMTP_EMAIL}>`,
+        from: `${process.env.STORE_NAME || 'TerraKnots'} <${process.env.SMTP_USER}>`,
         to: options.email,
         subject: options.subject,
         html: options.html,
@@ -79,6 +79,58 @@ const getOrderConfirmationEmail = (order) => {
           <p>Handmade with heart, knot by knot 💛</p>
           <p>© ${new Date().getFullYear()} TerraKnots. All rights reserved.</p>
           <p><a href="https://instagram.com/terra_knots" style="color: white;">@terra_knots</a></p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+};
+
+const getAdminOrderNotificationEmail = (order) => {
+    return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <style>
+        body { font-family: 'Arial', sans-serif; line-height: 1.6; color: #2C2C2C; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: #8B7355; color: white; padding: 20px; text-align: center; border-radius: 10px 10px 0 0; }
+        .content { background: #F5F0EB; padding: 30px; }
+        .order-item { background: white; padding: 15px; margin: 10px 0; border-radius: 8px; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1>🚨 New Order Received!</h1>
+          <p>Order ID: ${order.orderId}</p>
+        </div>
+        <div class="content">
+          <h2>Hello Admin,</h2>
+          <p>A new order was just placed by <strong>${order.guestInfo?.name || order.shippingAddress.fullName}</strong>.</p>
+          <p>Please prepare to make and pack this order!</p>
+          
+          <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <p><strong>Customer Email:</strong> ${order.guestInfo?.email || 'Registered User'}</p>
+            <p><strong>Total Amount:</strong> ₹${order.totalAmount}</p>
+            <p><strong>Payment Method:</strong> ${order.paymentMethod.toUpperCase()}</p>
+          </div>
+          
+          <h3>Items Ordered:</h3>
+          ${order.items.map(item => `
+            <div class="order-item">
+              <p><strong>${item.name}</strong></p>
+              <p>Quantity: ${item.quantity} × ₹${item.price} = ₹${item.quantity * item.price}</p>
+            </div>
+          `).join('')}
+          
+          <h3>Shipping Details:</h3>
+          <div style="background: white; padding: 15px; border-radius: 8px;">
+            <p>${order.shippingAddress.fullName}</p>
+            <p>${order.shippingAddress.addressLine1}, ${order.shippingAddress.addressLine2 || ''}</p>
+            <p>${order.shippingAddress.city}, ${order.shippingAddress.state} - ${order.shippingAddress.pincode}</p>
+            <p>Phone: ${order.shippingAddress.phone}</p>
+          </div>
         </div>
       </div>
     </body>
@@ -181,6 +233,7 @@ const getWelcomeEmail = (name) => {
 module.exports = {
     sendEmail,
     getOrderConfirmationEmail,
+    getAdminOrderNotificationEmail,
     getPasswordResetEmail,
     getWelcomeEmail,
 };

@@ -64,6 +64,7 @@ const couponRoutes = require('./routes/couponRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const settingsRoutes = require('./routes/settingsRoutes');
+const uploadRoutes = require('./routes/uploadRoutes');
 
 // Mount routers
 app.use('/api/auth', authRoutes);
@@ -79,6 +80,7 @@ app.use('/api/coupons', couponRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/upload', uploadRoutes);
 
 // Root route
 app.get('/', (req, res) => {

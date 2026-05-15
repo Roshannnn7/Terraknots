@@ -1,111 +1,185 @@
 'use client';
 
-import { motion } from 'framer-motion';
-import Link from 'next/link';
+import { useRef, useState } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
+import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 
-// Swap these for local crops from your own photos
 const categories = [
     {
         name: 'Crochet',
-        description: 'Bows, roses & soft accessories',
-        image: '/categories/terra-crochet.jpg',
-        color: 'from-[#F6E6D6] to-[#F3D9C0]',
-        count: 24,
-        tag: 'Loops & knots'
+        slug: 'crochet',
+        count: 14,
+        image: 'https://picsum.photos/seed/crochet-cat-hero/600/750',
+        accent: '#C4A882',
+        emoji: '🧶',
+        desc: 'Handknitted with love',
     },
     {
-        name: 'Resin',
-        description: 'Glossy coasters & dreamy keychains',
-        image: '/categories/terra-resin.jpg',
-        color: 'from-[#E1EFE3] to-[#CFE0D2]',
-        count: 18,
-        tag: 'Shiny things'
+        name: 'Resin Art',
+        slug: 'resin',
+        count: 11,
+        image: 'https://picsum.photos/seed/resin-cat-hero/600/750',
+        accent: '#D4A574',
+        emoji: '✨',
+        desc: 'Sparkling creations',
     },
     {
         name: 'Clay',
-        description: 'Everyday-light statement earrings',
-        image: '/categories/terra-clay.jpg',
-        color: 'from-[#F8D7C4] to-[#F4C0A0]',
-        count: 12,
-        tag: 'Wearable art'
-    }
+        slug: 'clay',
+        count: 9,
+        image: 'https://picsum.photos/seed/clay-cat-hero/600/750',
+        accent: '#A8B5A2',
+        emoji: '🏺',
+        desc: 'Earthy elegance',
+    },
+    {
+        name: 'Decor',
+        slug: 'decor',
+        count: 8,
+        image: 'https://picsum.photos/seed/decor-cat-hero/600/750',
+        accent: '#C9B09B',
+        emoji: '🪴',
+        desc: 'Home with soul',
+    },
 ];
 
-const Categories = () => {
+function CategoryCard({ cat, index }) {
+    const cardRef = useRef(null);
+    const x = useMotionValue(0);
+    const y = useMotionValue(0);
+    const rotateX = useSpring(useTransform(y, [-0.5, 0.5], [5, -5]), { stiffness: 300, damping: 30 });
+    const rotateY = useSpring(useTransform(x, [-0.5, 0.5], [-5, 5]), { stiffness: 300, damping: 30 });
+
+    const handleMouseMove = (e) => {
+        const rect = cardRef.current?.getBoundingClientRect();
+        if (!rect) return;
+        const relX = (e.clientX - rect.left) / rect.width - 0.5;
+        const relY = (e.clientY - rect.top) / rect.height - 0.5;
+        x.set(relX);
+        y.set(relY);
+    };
+
+    const handleMouseLeave = () => {
+        x.set(0);
+        y.set(0);
+    };
+
     return (
-        <section className="py-24 bg-white relative overflow-hidden">
-            {/* Yarn loops in the background */}
-            <div className="pointer-events-none absolute -left-32 top-16 w-72 h-72 rounded-full border-[22px] border-primary/10" />
-            <div className="pointer-events-none absolute -right-40 bottom-0 w-80 h-80 rounded-full border-[18px] border-accent/12" />
+        <motion.div
+            ref={cardRef}
+            initial={{ opacity: 0, y: 40, scale: 0.95 }}
+            whileInView={{ opacity: 1, y: 0, scale: 1 }}
+            viewport={{ once: true, margin: '-50px' }}
+            transition={{ delay: index * 0.1, duration: 0.6, ease: 'easeOut' }}
+            onMouseMove={handleMouseMove}
+            onMouseLeave={handleMouseLeave}
+            style={{ rotateX, rotateY, transformStyle: 'preserve-3d', perspective: '800px' }}
+        >
+            <Link href={`/shop?category=${cat.slug}`}>
+                <motion.div
+                    whileHover={{ y: -6 }}
+                    transition={{ duration: 0.3 }}
+                    className="relative rounded-3xl overflow-hidden cursor-pointer group"
+                    style={{ aspectRatio: '3/4', boxShadow: '0 4px 20px rgba(139,115,85,0.12)' }}
+                >
+                    {/* Image */}
+                    <Image
+                        src={cat.image}
+                        alt={cat.name}
+                        fill
+                        className="object-cover transition-transform duration-700 group-hover:scale-110"
+                    />
 
-            <div className="container mx-auto px-4 relative">
-                <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 space-y-4 md:space-y-0">
-                    <div className="space-y-2">
-                        <span className="text-primary font-bold text-sm uppercase tracking-widest">Our little families</span>
-                        <h2 className="text-4xl md:text-5xl font-heading font-bold text-dark">
-                            Shop by knot, pour or sculpt
-                        </h2>
-                    </div>
-                    <Link
-                        href="/shop"
-                        className="text-sm font-bold text-primary hover:text-secondary flex items-center group transition-colors"
+                    {/* Gradient overlays */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                    <motion.div
+                        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                        style={{ background: `linear-gradient(to top, ${cat.accent}80, transparent)` }}
+                    />
+
+                    {/* Emoji top-left */}
+                    <motion.div
+                        className="absolute top-4 left-4 text-2xl"
+                        animate={{ rotate: [0, 10, 0, -10, 0] }}
+                        transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut', delay: index * 0.5 }}
                     >
-                        Browse all pieces
-                        <span className="ml-2 group-hover:translate-x-1 transition-transform">→</span>
-                    </Link>
-                </div>
+                        {cat.emoji}
+                    </motion.div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    {categories.map((category, index) => (
+                    {/* Count badge top-right */}
+                    <div className="absolute top-4 right-4 bg-white/20 backdrop-blur-sm text-white text-xs font-bold px-3 py-1 rounded-full border border-white/30">
+                        {cat.count} items
+                    </div>
+
+                    {/* Bottom content */}
+                    <div className="absolute bottom-0 left-0 right-0 p-5 text-white">
+                        <p className="text-xs font-semibold uppercase tracking-widest opacity-80 mb-1">
+                            {cat.desc}
+                        </p>
+                        <h3 className="font-heading text-2xl font-bold mb-2">{cat.name}</h3>
                         <motion.div
-                            key={category.name}
-                            initial={{ opacity: 0, y: 30, rotate: -2 }}
-                            whileInView={{ opacity: 1, y: 0, rotate: 0 }}
-                            viewport={{ once: true }}
-                            transition={{ delay: index * 0.15, type: 'spring', stiffness: 220, damping: 18 }}
-                            className="group cursor-pointer"
+                            className="flex items-center gap-1 text-sm font-semibold opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300"
                         >
-                            <Link href={`/shop?category=${category.name}`}>
-                                <div
-                                    className={`relative aspect-[4/5] rounded-[2.3rem] overflow-hidden bg-gradient-to-br ${category.color} p-4 transition-transform duration-500 group-hover:-translate-y-3 group-hover:shadow-2xl`}
-                                >
-                                    <div className="relative w-full h-full rounded-[1.7rem] overflow-hidden">
-                                        <Image
-                                            src={category.image}
-                                            alt={category.name}
-                                            fill
-                                            className="object-cover transition-transform duration-700 group-hover:scale-110"
-                                        />
-                                        {/* Overlay */}
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/10 to-transparent opacity-60 group-hover:opacity-80 transition-opacity duration-500" />
-
-                                        <div className="absolute top-5 left-5">
-                                            <span className="inline-flex items-center px-3 py-1 rounded-full bg-white/80 text-[10px] font-bold uppercase tracking-[0.2em] text-dark">
-                                                {category.tag}
-                                            </span>
-                                        </div>
-
-                                        <div className="absolute bottom-6 left-6 right-6 text-white translate-y-4 group-hover:translate-y-0 transition-transform duration-500 opacity-0 group-hover:opacity-100">
-                                            <span className="text-xs font-medium uppercase tracking-[0.2em] mb-1 block">
-                                                {category.count}+ pieces
-                                            </span>
-                                            <p className="text-sm italic font-accent">{category.description}</p>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="mt-6 text-center">
-                                    <h3 className="text-2xl font-heading font-bold text-dark group-hover:text-primary transition-colors">
-                                        {category.name}
-                                    </h3>
-                                </div>
-                            </Link>
+                            View Collection →
                         </motion.div>
+                    </div>
+                </motion.div>
+            </Link>
+        </motion.div>
+    );
+}
+
+export default function Categories() {
+    return (
+        <section className="section bg-background relative overflow-hidden">
+            {/* Background blobs */}
+            <div className="absolute top-0 right-0 w-96 h-96 rounded-full -translate-y-1/2 translate-x-1/2 pointer-events-none"
+                style={{ background: 'radial-gradient(circle, rgba(168,181,162,0.15) 0%, transparent 70%)' }}
+            />
+
+            <div className="container">
+                {/* Header */}
+                <motion.div
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.7 }}
+                    className="section-header"
+                >
+                    <span className="section-label">Explore</span>
+                    <h2 className="section-title handdrawn-underline inline-block">
+                        Our Collections
+                    </h2>
+                    <p className="section-subtitle mt-6 max-w-lg mx-auto">
+                        Each collection is a world of handmade wonders — crafted slow, loved forever.
+                    </p>
+                </motion.div>
+
+                {/* Grid */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+                    {categories.map((cat, i) => (
+                        <CategoryCard key={cat.slug} cat={cat} index={i} />
                     ))}
                 </div>
+
+                {/* Link */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.6, delay: 0.4 }}
+                    className="text-center mt-12"
+                >
+                    <Link
+                        href="/shop"
+                        className="inline-flex items-center gap-2 text-secondary font-semibold text-sm hover:text-primary transition-colors group"
+                    >
+                        View All Products
+                        <span className="group-hover:translate-x-1 transition-transform">→</span>
+                    </Link>
+                </motion.div>
             </div>
         </section>
     );
-};
-
-export default Categories;
+}

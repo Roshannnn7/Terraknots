@@ -5,6 +5,13 @@ import { CartProvider } from '@/context/CartContext';
 import { WishlistProvider } from '@/context/WishlistContext';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import LoadingScreen from '@/components/ui/LoadingScreen';
+import ScrollToTop from '@/components/ui/ScrollToTop';
+import WhatsAppButton from '@/components/ui/WhatsAppButton';
+import MobileBottomNav from '@/components/layout/MobileBottomNav';
+import CustomCursor from '@/components/ui/CustomCursor';
+import ScrollProgressBar from '@/components/ui/ScrollProgressBar';
+import SocialProofPopup from '@/components/ui/SocialProofPopup';
 
 const playfair = Playfair_Display({
     subsets: ['latin'],
@@ -28,14 +35,35 @@ export const metadata = {
         template: '%s | TerraKnots',
     },
     description: 'Discover unique handmade crochet, resin, and clay accessories. Each piece is crafted with love and patience for those who appreciate artisan quality.',
-    keywords: ['handmade', 'crochet', 'resin', 'clay jewelry', 'artisan crafts', 'knitting', 'unique gifts'],
+    keywords: ['handmade', 'crochet', 'resin', 'clay jewelry', 'artisan crafts', 'knitting', 'unique gifts', 'India', 'handcrafted'],
+    authors: [{ name: 'TerraKnots' }],
+    creator: 'TerraKnots',
+    manifest: '/manifest.json',
+    appleWebApp: {
+        capable: true,
+        statusBarStyle: 'default',
+        title: 'TerraKnots',
+    },
+    formatDetection: { telephone: false },
     openGraph: {
         type: 'website',
         locale: 'en_IN',
         url: 'https://terraknots.com',
         siteName: 'TerraKnots',
-        images: [{ url: '/og-image.jpg' }],
+        title: 'TerraKnots — Handmade with Heart, Knot by Knot',
+        description: 'Discover unique handmade crochet, resin, clay and macrame creations. Each piece is crafted by hand with love.',
+        images: [{ url: '/images/logo.png', width: 800, height: 600, alt: 'TerraKnots' }],
     },
+    twitter: {
+        card: 'summary_large_image',
+        title: 'TerraKnots — Handmade with Heart',
+        description: 'Not mass-produced. Mass-loved. Discover artisan handmade gifts.',
+        images: ['/images/logo.png'],
+    },
+};
+
+export const viewport = {
+    themeColor: '#C4A882',
 };
 
 export default function RootLayout({ children }) {
@@ -45,9 +73,16 @@ export default function RootLayout({ children }) {
                 <AuthProvider>
                     <CartProvider>
                         <WishlistProvider>
-                            <main className="min-h-screen flex flex-col">
+                            <CustomCursor />
+                            <ScrollProgressBar />
+                            <LoadingScreen />
+                            <main className="min-h-screen flex flex-col pb-16 md:pb-0">
                                 {children}
                             </main>
+                            <MobileBottomNav />
+                            <ScrollToTop />
+                            <WhatsAppButton />
+                            <SocialProofPopup />
                             <ToastContainer
                                 position="bottom-right"
                                 autoClose={3000}

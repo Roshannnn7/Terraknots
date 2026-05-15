@@ -1,19 +1,31 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Search, SlidersHorizontal, X, Box } from 'lucide-react';
 import AnnouncementBar from '@/components/layout/AnnouncementBar';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import ProductCard from '@/components/common/ProductCard';
 import Filters from '@/components/shop/Filters';
 import Sort from '@/components/shop/Sort';
+import WaveDivider from '@/components/ui/WaveDivider';
 import api from '@/lib/api';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Search, SlidersHorizontal, X } from 'lucide-react';
 
-const ShopPage = () => {
+const staggerContainer = {
+    animate: { transition: { staggerChildren: 0.1 } }
+};
+const staggerItem = {
+    initial: { opacity: 0, y: 20 },
+    animate: { opacity: 1, y: 0, transition: { duration: 0.5 } },
+    exit: { opacity: 0, scale: 0.95, transition: { duration: 0.2 } }
+};
+
+export default function ShopPage() {
     const searchParams = useSearchParams();
+    const router = useRouter();
+
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [total, setTotal] = useState(0);
@@ -26,7 +38,7 @@ const ShopPage = () => {
         maxPrice: '',
         materials: [],
         inStock: false,
-        sortBy: 'newest',
+        sortBy: searchParams.get('sort') || 'newest',
         page: 1,
         limit: 12
     });
@@ -43,8 +55,8 @@ const ShopPage = () => {
                 if (filters.inStock) queryString += `&inStock=true`;
 
                 const { data } = await api.get(`/products${queryString}`);
-                setProducts(data.products);
-                setTotal(data.total);
+                setProducts(data.products || []);
+                setTotal(data.total || 0);
             } catch (error) {
                 console.error('Error fetching products:', error);
             } finally {
@@ -54,139 +66,263 @@ const ShopPage = () => {
         fetchProducts();
     }, [filters]);
 
+    // Update URL when category or sort changes
+    useEffect(() => {
+        const params = new URLSearchParams();
+        if (filters.category && filters.category !== 'All') params.set('category', filters.category);
+        if (filters.sortBy !== 'newest') params.set('sort', filters.sortBy);
+        if (filters.search) params.set('search', filters.search);
+        
+        const newUrl = params.toString() ? `/shop?${params.toString()}` : '/shop';
+        router.replace(newUrl, { scroll: false });
+    }, [filters.category, filters.sortBy, filters.search, router]);
+
     return (
         <>
             <AnnouncementBar />
             <Navbar />
 
-            <main className="pt-28 pb-24 bg-background overflow-hidden">
-                {/* Page Header */}
-                <div className="bg-white py-12 mb-12">
-                    <div className="container mx-auto px-4 text-center space-y-4">
-                        <h1 className="text-4xl md:text-6xl font-heading font-bold text-dark">Our Shop</h1>
-                        <p className="text-light italic font-accent text-xl">Discover items made with patience and heart</p>
+            <main className="min-h-screen bg-background pt-[108px] overflow-hidden">
+                {/* Shop Header Area */}
+                <div className="relative py-20 overflow-hidden" style={{ background: 'linear-gradient(180deg, #F5F0EB 0%, #FAF8F5 100%)' }}>
+                    {/* Decorative Blobs */}
+                    <motion.div className="absolute top-0 right-10 w-64 h-64 rounded-full pointer-events-none opacity-40 mix-blend-multiply"
+                        style={{ background: 'radial-gradient(circle, rgba(196,168,130,0.5) 0%, transparent 70%)' }}
+                        animate={{ scale: [1, 1.2, 1], x: [0, 20, 0] }}
+                        transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
+                    />
+                    <motion.div className="absolute bottom-0 left-10 w-80 h-80 rounded-full pointer-events-none opacity-40 mix-blend-multiply"
+                        style={{ background: 'radial-gradient(circle, rgba(168,181,162,0.5) 0%, transparent 70%)' }}
+                        animate={{ scale: [1, 1.1, 1], x: [0, -15, 0] }}
+                        transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
+                    />
+
+                    <div className="container relative z-10 text-center">
+                        <motion.span
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="inline-block px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest text-primary mb-4"
+                            style={{ backgroundColor: 'rgba(196,168,130,0.1)' }}
+                        >
+                            Explore Collection
+                        </motion.span>
+                        <motion.h1
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.1 }}
+                            className="text-5xl md:text-7xl font-heading font-bold text-dark mb-4"
+                        >
+                            The <span className="font-accent italic text-primary">Artisan</span> Shop
+                        </motion.h1>
+                        <motion.p
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.2 }}
+                            className="text-light text-lg md:text-xl max-w-2xl mx-auto font-medium"
+                        >
+                            Every piece is hand-crafted with patience, love, and attention to detail. Find your unique treasure.
+                        </motion.p>
                     </div>
                 </div>
 
-                <div className="container mx-auto px-4 md:px-6">
-                    <div className="flex flex-col lg:flex-row gap-8">
-                        {/* Desktop Filters Sidebar */}
+                <WaveDivider color="#FAF8F5" flip variant={2} />
+
+                <div className="container py-12 md:py-16">
+                    <div className="flex flex-col lg:flex-row gap-10">
+
+                        {/* Desktop Sidebar Filters */}
                         <aside className="hidden lg:block w-72 flex-shrink-0">
-                            <div className="sticky top-32">
+                            <div className="sticky top-32 p-6 rounded-3xl bg-white/50 backdrop-blur-sm border border-gray-100"
+                                style={{ boxShadow: '0 4px 40px rgba(139,115,85,0.05)' }}
+                            >
                                 <Filters filters={filters} setFilters={setFilters} />
                             </div>
                         </aside>
 
-                        {/* Main Content Area */}
+                        {/* Main Shop Content */}
                         <div className="flex-1">
                             {/* Toolbar */}
-                            <div className="flex flex-wrap items-center justify-between mb-10 gap-4 bg-white p-6 rounded-2xl shadow-sm">
-                                <div className="flex items-center space-x-4">
+                            <div className="flex flex-wrap items-center justify-between gap-4 mb-8 bg-white p-4 md:p-5 rounded-2xl shadow-sm border border-gray-100">
+                                <div className="flex items-center gap-4">
                                     <button
                                         onClick={() => setIsMobileFilterOpen(true)}
-                                        className="lg:hidden flex items-center space-x-2 text-dark font-bold text-sm bg-background px-4 py-2 rounded-xl"
+                                        className="lg:hidden flex items-center gap-2 text-dark font-bold text-sm bg-background px-4 py-2.5 rounded-xl transition-colors hover:bg-gray-100"
                                     >
-                                        <SlidersHorizontal size={18} />
+                                        <SlidersHorizontal size={16} />
                                         <span>Filters</span>
                                     </button>
-                                    <p className="text-sm text-light hidden sm:block">
-                                        Showing <span className="font-bold text-dark">{products.length}</span> of <span className="font-bold text-dark">{total}</span> products
+                                    <p className="text-sm font-medium text-light hidden sm:block">
+                                        Showing <span className="text-primary font-bold">{products.length}</span> of <span className="text-dark font-bold">{total}</span> items
                                     </p>
                                 </div>
 
-                                <div className="flex items-center space-x-6">
-                                    {/* Search Bar */}
-                                    <div className="relative group hidden md:block">
+                                <div className="flex items-center gap-4 md:gap-6 w-full sm:w-auto">
+                                    {/* Search input */}
+                                    <div className="relative group flex-1 sm:w-64">
                                         <input
                                             type="text"
-                                            placeholder="Search unique pieces..."
+                                            placeholder="Search treasures..."
                                             value={filters.search}
-                                            onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-                                            className="bg-background border-0 rounded-full py-2 pl-10 pr-4 text-sm w-64 focus:ring-1 focus:ring-primary outline-none transition-all"
+                                            onChange={(e) => setFilters({ ...filters, search: e.target.value, page: 1 })}
+                                            className="w-full bg-background border-0 rounded-full py-2.5 pl-11 pr-4 text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all placeholder:text-gray-400 font-medium"
                                         />
-                                        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-light group-focus-within:text-primary" />
+                                        <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-primary transition-colors" />
+                                        {filters.search && (
+                                            <button 
+                                                onClick={() => setFilters({ ...filters, search: '', page: 1 })}
+                                                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-dark"
+                                            >
+                                                <X size={14} />
+                                            </button>
+                                        )}
                                     </div>
-                                    <Sort value={filters.sortBy} onChange={(val) => setFilters({ ...filters, sortBy: val })} />
+                                    {/* Sort Dropdown */}
+                                    <div className="hidden sm:block shrink-0">
+                                        <Sort value={filters.sortBy} onChange={(val) => setFilters({ ...filters, sortBy: val, page: 1 })} />
+                                    </div>
                                 </div>
                             </div>
 
-                            {/* Product Grid */}
-                            {loading ? (
-                                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-8">
-                                    {[...Array(6)].map((_, i) => (
-                                        <div key={i} className="aspect-[4/5] bg-gray-100 animate-pulse rounded-2xl" />
-                                    ))}
-                                </div>
-                            ) : products.length > 0 ? (
-                                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-8">
-                                    <AnimatePresence>
-                                        {products.map((product, idx) => (
-                                            <motion.div
-                                                key={product._id}
-                                                initial={{ opacity: 0, y: 20 }}
-                                                animate={{ opacity: 1, y: 0 }}
-                                                transition={{ delay: idx * 0.05 }}
-                                            >
+                            {/* Mobile sort row */}
+                            <div className="sm:hidden flex justify-end mb-6">
+                                <Sort value={filters.sortBy} onChange={(val) => setFilters({ ...filters, sortBy: val, page: 1 })} />
+                            </div>
+
+                            {/* Applied Filters Tags */}
+                            <div className="flex flex-wrap gap-2 mb-6">
+                                {filters.category !== 'All' && (
+                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-primary/10 text-primary text-xs font-bold rounded-full">
+                                        Category: {filters.category}
+                                        <button onClick={() => setFilters({ ...filters, category: 'All', page: 1 })}><X size={12} /></button>
+                                    </span>
+                                )}
+                                {filters.inStock && (
+                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full">
+                                        In Stock Only
+                                        <button onClick={() => setFilters({ ...filters, inStock: false, page: 1 })}><X size={12} /></button>
+                                    </span>
+                                )}
+                                {filters.materials.map(mat => (
+                                    <span key={mat} className="inline-flex items-center gap-1.5 px-3 py-1 bg-background text-dark text-xs font-bold rounded-full border border-gray-200">
+                                        {mat}
+                                        <button onClick={() => setFilters({ ...filters, materials: filters.materials.filter(m => m !== mat), page: 1 })}><X size={12} /></button>
+                                    </span>
+                                ))}
+                            </div>
+
+                            {/* Grid / Skeletons */}
+                            <AnimatePresence mode="wait">
+                                {loading ? (
+                                    <motion.div
+                                        key="skeletons"
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        exit={{ opacity: 0 }}
+                                        className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6 lg:gap-8"
+                                    >
+                                        {[...Array(9)].map((_, i) => (
+                                            <div key={i} className="bg-white rounded-2xl overflow-hidden shadow-sm" style={{ boxShadow: '0 4px 20px rgba(139,115,85,0.06)' }}>
+                                                <div className="skeleton aspect-[4/5]" />
+                                                <div className="p-4 space-y-3">
+                                                    <div className="skeleton h-3 w-1/4 rounded-lg" />
+                                                    <div className="skeleton h-4 w-3/4 rounded-lg" />
+                                                    <div className="skeleton h-5 w-1/3 rounded-lg mt-2" />
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </motion.div>
+                                ) : products.length > 0 ? (
+                                    <motion.div
+                                        key="grid"
+                                        variants={staggerContainer}
+                                        initial="initial"
+                                        animate="animate"
+                                        className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6 lg:gap-8"
+                                    >
+                                        {products.map((product) => (
+                                            <motion.div key={product._id} variants={staggerItem}>
                                                 <ProductCard product={product} />
                                             </motion.div>
                                         ))}
-                                    </AnimatePresence>
-                                </div>
-                            ) : (
-                                <div className="text-center py-24 bg-white rounded-3xl space-y-6">
-                                    <div className="w-24 h-24 bg-background rounded-full flex items-center justify-center mx-auto">
-                                        <Search size={40} className="text-light" />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <h3 className="text-2xl font-heading font-bold">No results found</h3>
-                                        <p className="text-light max-w-xs mx-auto">Try adjusting your filters or search keywords to find what you are looking for.</p>
-                                    </div>
-                                    <button
-                                        onClick={() => setFilters({ ...filters, category: 'All', search: '', materials: [], inStock: false })}
-                                        className="btn-primary"
+                                    </motion.div>
+                                ) : (
+                                    <motion.div
+                                        key="empty"
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        className="bg-white py-20 px-6 rounded-3xl text-center border border-gray-100 shadow-sm"
                                     >
-                                        Clear All Filters
-                                    </button>
-                                </div>
-                            )}
+                                        <div className="w-20 h-20 bg-background rounded-full flex items-center justify-center mx-auto mb-6">
+                                            <Box size={32} className="text-light" />
+                                        </div>
+                                        <h3 className="text-2xl font-heading font-bold text-dark mb-2">No items found</h3>
+                                        <p className="text-light max-w-sm mx-auto mb-8">
+                                            We couldn't find any products matching your current filters. Try adjusting them or clear all filters to see our full collection.
+                                        </p>
+                                        <button
+                                            onClick={() => setFilters({
+                                                category: 'All', minPrice: '', maxPrice: '', materials: [], inStock: false, search: '', sortBy: 'newest', page: 1
+                                            })}
+                                            className="btn-primary"
+                                        >
+                                            Clear All Filters
+                                        </button>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
 
-                            {/* Pagination */}
-                            {total > filters.limit && (
-                                <div className="mt-16 flex justify-center space-x-2">
+                            {/* Pagination Logic */}
+                            {!loading && total > filters.limit && (
+                                <div className="mt-16 flex justify-center items-center gap-2">
                                     <button
                                         disabled={filters.page === 1}
-                                        onClick={() => setFilters({ ...filters, page: filters.page - 1 })}
-                                        className="w-10 h-10 rounded-full flex items-center justify-center border border-gray-200 hover:border-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                        onClick={() => {
+                                            setFilters({ ...filters, page: filters.page - 1 });
+                                            window.scrollTo({ top: 300, behavior: 'smooth' });
+                                        }}
+                                        className="w-10 h-10 rounded-full flex items-center justify-center bg-white border border-gray-200 text-dark hover:border-primary disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                                     >
                                         ←
                                     </button>
-                                    {[...Array(Math.ceil(total / filters.limit))].map((_, i) => (
-                                        <button
-                                            key={i}
-                                            onClick={() => setFilters({ ...filters, page: i + 1 })}
-                                            className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all ${filters.page === i + 1
-                                                    ? 'bg-primary text-white shadow-lg scale-110'
-                                                    : 'bg-white text-dark hover:bg-gray-50'
+
+                                    <div className="flex gap-1">
+                                        {[...Array(Math.ceil(total / filters.limit))].map((_, i) => (
+                                            <button
+                                                key={i}
+                                                onClick={() => {
+                                                    setFilters({ ...filters, page: i + 1 });
+                                                    window.scrollTo({ top: 300, behavior: 'smooth' });
+                                                }}
+                                                className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
+                                                    filters.page === i + 1
+                                                        ? 'bg-primary text-white shadow-lg scale-110'
+                                                        : 'bg-white text-dark border border-transparent hover:border-gray-200'
                                                 }`}
-                                        >
-                                            {i + 1}
-                                        </button>
-                                    ))}
+                                            >
+                                                {i + 1}
+                                            </button>
+                                        ))}
+                                    </div>
+
                                     <button
                                         disabled={filters.page === Math.ceil(total / filters.limit)}
-                                        onClick={() => setFilters({ ...filters, page: filters.page + 1 })}
-                                        className="w-10 h-10 rounded-full flex items-center justify-center border border-gray-200 hover:border-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                        onClick={() => {
+                                            setFilters({ ...filters, page: filters.page + 1 });
+                                            window.scrollTo({ top: 300, behavior: 'smooth' });
+                                        }}
+                                        className="w-10 h-10 rounded-full flex items-center justify-center bg-white border border-gray-200 text-dark hover:border-primary disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                                     >
                                         →
                                     </button>
                                 </div>
                             )}
+
                         </div>
                     </div>
                 </div>
             </main>
 
-            {/* Mobile Filters Modal */}
+            {/* Mobile Filters Drawer */}
             <AnimatePresence>
                 {isMobileFilterOpen && (
                     <>
@@ -195,19 +331,38 @@ const ShopPage = () => {
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             onClick={() => setIsMobileFilterOpen(false)}
-                            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[60]"
+                            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60]"
                         />
                         <motion.div
                             initial={{ x: '100%' }}
                             animate={{ x: 0 }}
                             exit={{ x: '100%' }}
-                            className="fixed right-0 top-0 bottom-0 w-[80%] max-w-sm bg-white z-[65] p-8 overflow-y-auto"
+                            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                            className="fixed right-0 top-0 bottom-0 w-[85%] max-w-sm bg-white z-[70] shadow-2xl flex flex-col"
+                            style={{ paddingBottom: 'env(safe-area-inset-bottom, 0)' }}
                         >
-                            <div className="flex items-center justify-between mb-8">
-                                <h3 className="text-2xl font-heading font-bold">Filters</h3>
-                                <button onClick={() => setIsMobileFilterOpen(false)}><X size={24} /></button>
+                            <div className="flex items-center justify-between p-6 border-b border-gray-100">
+                                <h3 className="text-xl font-heading font-bold text-dark">Filters</h3>
+                                <button
+                                    onClick={() => setIsMobileFilterOpen(false)}
+                                    className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200"
+                                >
+                                    <X size={18} />
+                                </button>
                             </div>
-                            <Filters filters={filters} setFilters={setFilters} />
+                            
+                            <div className="flex-1 overflow-y-auto p-6">
+                                <Filters filters={filters} setFilters={setFilters} />
+                            </div>
+
+                            <div className="p-6 border-t border-gray-100">
+                                <button
+                                    onClick={() => setIsMobileFilterOpen(false)}
+                                    className="w-full btn-primary"
+                                >
+                                    Apply Filters
+                                </button>
+                            </div>
                         </motion.div>
                     </>
                 )}
@@ -216,6 +371,4 @@ const ShopPage = () => {
             <Footer />
         </>
     );
-};
-
-export default ShopPage;
+}

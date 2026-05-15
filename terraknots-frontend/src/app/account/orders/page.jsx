@@ -6,7 +6,7 @@ import AnnouncementBar from '@/components/layout/AnnouncementBar';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import api from '@/lib/api';
-import { formatPrice, formatDate, getStatusColor } from '@/lib/utils';
+import { formatPrice, formatDate, getStatusInfo } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import { Package, ChevronRight, ShoppingBag, MapPin, Calendar } from 'lucide-react';
 import Image from 'next/image';
@@ -106,7 +106,7 @@ const OrderHistoryPage = () => {
                                                 <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
                                                     <div className="flex-1 space-y-4">
                                                         <div className="flex items-center space-x-2">
-                                                            <span className={`px-4 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${getStatusColor(order.orderStatus)}`}>
+                                                            <span className={`px-4 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${getStatusInfo(order.orderStatus).color}`}>
                                                                 {order.orderStatus}
                                                             </span>
                                                             {order.paymentStatus === 'paid' && order.paymentMethod !== 'cod' ? (

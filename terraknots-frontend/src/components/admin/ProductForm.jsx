@@ -17,13 +17,12 @@ import { toast } from 'react-toastify';
 import api from '@/lib/api';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
+import ImageUploader from './ImageUploader';
 
 const ProductForm = ({ initialData = null, isEdit = false }) => {
     const router = useRouter();
-    const fileInputRef = useRef(null);
     const [loading, setLoading] = useState(false);
     const [images, setImages] = useState(initialData?.images || []);
-    const [uploading, setUploading] = useState(false);
 
     const [formData, setFormData] = useState({
         name: initialData?.name || '',
@@ -39,39 +38,14 @@ const ProductForm = ({ initialData = null, isEdit = false }) => {
         tags: initialData?.tags || [],
         isFeatured: initialData?.isFeatured || false,
         isActive: initialData?.isActive !== undefined ? initialData.isActive : true,
+        isNewArrival: initialData?.isNewArrival || false,
+        isBestseller: initialData?.isBestseller || false,
+        metaTitle: initialData?.metaTitle || '',
+        metaDescription: initialData?.metaDescription || '',
     });
 
     const [newMaterial, setNewMaterial] = useState('');
     const [newTag, setNewTag] = useState('');
-
-    const handleImageUpload = async (e) => {
-        const files = Array.from(e.target.files);
-        if (files.length === 0) return;
-
-        setUploading(true);
-        const uploadedUrls = [...images];
-
-        try {
-            for (const file of files) {
-                const formData = new FormData();
-                formData.append('image', file);
-                const { data } = await api.post('/upload/image', formData, {
-                    headers: { 'Content-Type': 'multipart/form-data' }
-                });
-                uploadedUrls.push(data.url);
-            }
-            setImages(uploadedUrls);
-            toast.success('Images uploaded to workshop');
-        } catch (error) {
-            toast.error('Failed to upload some images');
-        } finally {
-            setUploading(false);
-        }
-    };
-
-    const removeImage = (index) => {
-        setImages(images.filter((_, i) => i !== index));
-    };
 
     const handleAddItem = (type) => {
         if (type === 'material' && newMaterial.trim()) {
@@ -220,7 +194,25 @@ const ProductForm = ({ initialData = null, isEdit = false }) => {
                                     checked={formData.isFeatured}
                                     onChange={(e) => setFormData({ ...formData, isFeatured: e.target.checked })}
                                 />
-                                <span className="text-sm font-bold text-dark group-hover:text-primary transition-colors">Show in Bestsellers</span>
+                                <span className="text-sm font-bold text-dark group-hover:text-primary transition-colors">Show in Featured</span>
+                            </label>
+                            <label className="flex items-center space-x-3 cursor-pointer group">
+                                <input
+                                    type="checkbox"
+                                    className="w-5 h-5 rounded-lg border-gray-200 text-primary focus:ring-primary/20"
+                                    checked={formData.isBestseller}
+                                    onChange={(e) => setFormData({ ...formData, isBestseller: e.target.checked })}
+                                />
+                                <span className="text-sm font-bold text-dark group-hover:text-primary transition-colors">Bestseller Badge</span>
+                            </label>
+                            <label className="flex items-center space-x-3 cursor-pointer group">
+                                <input
+                                    type="checkbox"
+                                    className="w-5 h-5 rounded-lg border-gray-200 text-primary focus:ring-primary/20"
+                                    checked={formData.isNewArrival}
+                                    onChange={(e) => setFormData({ ...formData, isNewArrival: e.target.checked })}
+                                />
+                                <span className="text-sm font-bold text-dark group-hover:text-primary transition-colors">New Arrival Badge</span>
                             </label>
                             <label className="flex items-center space-x-3 cursor-pointer group">
                                 <input
@@ -315,61 +307,7 @@ const ProductForm = ({ initialData = null, isEdit = false }) => {
             <div className="space-y-8">
 
                 {/* Gallery */}
-                <div className="bg-white p-8 rounded-[3rem] shadow-sm border border-gray-100 space-y-6">
-                    <h3 className="text-lg font-heading font-bold text-dark">Visual Backdrop</h3>
-                    <div className="grid grid-cols-2 gap-4">
-                        <AnimatePresence>
-                            {images.map((img, idx) => (
-                                <motion.div
-                                    key={idx}
-                                    initial={{ scale: 0.8, opacity: 0 }}
-                                    animate={{ scale: 1, opacity: 1 }}
-                                    exit={{ scale: 0.8, opacity: 0 }}
-                                    className="aspect-square rounded-2xl overflow-hidden relative group border border-gray-50 bg-background"
-                                >
-                                    <img src={img} alt="" className="w-full h-full object-cover" />
-                                    <button
-                                        type="button"
-                                        onClick={() => removeImage(idx)}
-                                        className="absolute top-2 right-2 p-1.5 bg-white/80 backdrop-blur-md rounded-lg text-red-500 opacity-0 group-hover:opacity-100 transition-all"
-                                    >
-                                        <Trash2 size={16} />
-                                    </button>
-                                    {idx === 0 && (
-                                        <div className="absolute bottom-0 inset-x-0 bg-primary/80 backdrop-blur-sm text-white text-[8px] font-bold uppercase tracking-widest text-center py-1">
-                                            Cover
-                                        </div>
-                                    )}
-                                </motion.div>
-                            ))}
-                        </AnimatePresence>
-
-                        <button
-                            type="button"
-                            disabled={uploading}
-                            onClick={() => fileInputRef.current.click()}
-                            className="aspect-square rounded-2xl border-2 border-dashed border-primary/20 bg-primary/5 flex flex-col items-center justify-center text-primary hover:bg-primary/10 transition-colors"
-                        >
-                            {uploading ? (
-                                <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                            ) : (
-                                <>
-                                    <Upload size={24} />
-                                    <span className="text-[10px] font-bold uppercase tracking-wider mt-2">Upload</span>
-                                </>
-                            )}
-                        </button>
-                    </div>
-                    <input
-                        type="file"
-                        multiple
-                        hidden
-                        ref={fileInputRef}
-                        onChange={handleImageUpload}
-                        accept="image/*"
-                    />
-                    <p className="text-[10px] text-light italic text-center">First image will be the primary shop photo.</p>
-                </div>
+                <ImageUploader images={images} setImages={setImages} />
 
                 {/* Tech Specs */}
                 <div className="bg-white p-8 rounded-[3rem] shadow-sm border border-gray-100 space-y-6">
@@ -398,11 +336,38 @@ const ProductForm = ({ initialData = null, isEdit = false }) => {
                     </div>
                 </div>
 
+                {/* SEO Meta */}
+                <div className="bg-white p-8 rounded-[3rem] shadow-sm border border-gray-100 space-y-6">
+                    <h3 className="text-lg font-heading font-bold text-dark">SEO & Search</h3>
+                    <div className="space-y-4">
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-light pl-4">Meta Title</label>
+                            <input
+                                type="text"
+                                className="input-field h-12 text-sm"
+                                placeholder="Leave blank to use product name"
+                                value={formData.metaTitle}
+                                onChange={(e) => setFormData({ ...formData, metaTitle: e.target.value })}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-light pl-4">Meta Description</label>
+                            <textarea
+                                rows={3}
+                                className="input-field p-4 text-sm resize-none"
+                                placeholder="Short description for Google search results..."
+                                value={formData.metaDescription}
+                                onChange={(e) => setFormData({ ...formData, metaDescription: e.target.value })}
+                            />
+                        </div>
+                    </div>
+                </div>
+
                 {/* Actions */}
                 <div className="space-y-4 sticky top-24">
                     <button
                         type="submit"
-                        disabled={loading || uploading}
+                        disabled={loading}
                         className="w-full btn-primary h-16 flex items-center justify-center space-x-3 text-lg shadow-xl shadow-primary/20"
                     >
                         {loading ? (

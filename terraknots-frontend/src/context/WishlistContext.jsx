@@ -69,6 +69,14 @@ export const WishlistProvider = ({ children }) => {
         return !!wishlist.find(p => p._id === productId);
     };
 
+    const toggleWishlist = async (product) => {
+        if (isInWishlist(product._id)) {
+            await removeFromWishlist(product._id);
+        } else {
+            await addToWishlist(product);
+        }
+    };
+
     return (
         <WishlistContext.Provider
             value={{
@@ -77,6 +85,8 @@ export const WishlistProvider = ({ children }) => {
                 addToWishlist,
                 removeFromWishlist,
                 isInWishlist,
+                isWishlisted: isInWishlist,
+                toggleWishlist,
             }}
         >
             {children}

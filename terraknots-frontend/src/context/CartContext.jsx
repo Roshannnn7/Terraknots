@@ -116,6 +116,9 @@ export const CartProvider = ({ children }) => {
 
     const cartCount = cart.reduce((count, item) => count + item.quantity, 0);
 
+    // Helper function to retrieve the total price (used by components like CartDrawer)
+    const getCartTotal = () => cartTotal;
+
     return (
         <CartContext.Provider
             value={{
@@ -127,6 +130,7 @@ export const CartProvider = ({ children }) => {
                 clearCart,
                 cartTotal,
                 cartCount,
+                getCartTotal,
             }}
         >
             {children}

@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import AnnouncementBar from '@/components/layout/AnnouncementBar';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
@@ -41,7 +42,7 @@ const AboutPage = () => {
                         >
                             <div className="aspect-[3/4] relative rounded-[3rem] overflow-hidden shadow-2xl z-10 rotate-2 hover:rotate-0 transition-transform duration-700">
                                 <Image
-                                    src="https://images.unsplash.com/photo-1590595603721-a3791be67614?q=80&w=1000&auto=format&fit=crop"
+                                    src="/images/workspace-crochet.jpg"
                                     alt="Artisan at work"
                                     fill
                                     className="object-cover"
@@ -85,6 +86,22 @@ const AboutPage = () => {
                         </motion.div>
                     </div>
 
+                    {/* Behind the Scenes Collage */}
+                    <div className="mb-32">
+                        <div className="text-center mb-16">
+                            <h2 className="text-4xl md:text-5xl font-heading font-bold text-dark">Behind the Scenes</h2>
+                            <p className="mt-4 text-light italic font-accent text-xl">Where every knot begins — our small but mighty workspace</p>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+                            <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once:true }} transition={{ delay: 0.1 }} className="md:col-span-2 relative aspect-video rounded-[2rem] overflow-hidden group">
+                                <Image src="/images/workspace-crochet.jpg" fill className="object-cover group-hover:scale-105 transition-transform duration-700" alt="Workspace 1" />
+                            </motion.div>
+                            <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once:true }} transition={{ delay: 0.2 }} className="relative aspect-square md:aspect-auto md:h-full rounded-[2rem] overflow-hidden group">
+                                <Image src="/images/workspace-paint.jpg" fill className="object-cover group-hover:scale-105 transition-transform duration-700" alt="Workspace 2" />
+                            </motion.div>
+                        </div>
+                    </div>
+
                     {/* Philosophy Section */}
                     <div className="bg-dark text-white rounded-[4rem] p-12 md:p-24 relative overflow-hidden mb-32">
                         <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/natural-paper.png')]" />
@@ -117,10 +134,11 @@ const AboutPage = () => {
                     {/* Values / Stats */}
                     <div className="flex flex-wrap justify-between gap-12 text-center border-b border-gray-100 pb-24">
                         {[
+                            { label: 'Machines Used', value: '0', icon: Coffee },
+                            { label: 'Handmade', value: '100%', icon: Sparkles },
                             { label: 'Happy Customers', value: '500+', icon: Smile },
-                            { label: 'Unique Products', value: '150+', icon: Sparkles },
-                            { label: 'Coffee Consumed', value: 'Infinite', icon: Coffee },
-                            { label: 'Active Artisans', value: '05+', icon: User }
+                            { label: 'Hours of Crafting', value: '1000+', icon: User },
+                            { label: 'Love in Every Piece', value: '∞', icon: Heart }
                         ].map((stat, idx) => (
                             <motion.div
                                 key={idx}

@@ -6,6 +6,7 @@ import api from '@/lib/api';
 import { toast } from 'react-toastify';
 import { Lock, Mail, ArrowRight, ShieldCheck } from 'lucide-react';
 import { motion } from 'framer-motion';
+import Cookies from 'js-cookie';
 
 const AdminLoginPage = () => {
     const [email, setEmail] = useState('');
@@ -17,7 +18,13 @@ const AdminLoginPage = () => {
         e.preventDefault();
         setLoading(true);
         try {
-            const { data } = await api.post('/auth/admin/login', { email, password });
+            const { data } = await api.post('/auth/login', { email, password });
+            if (data.user.role !== 'admin') {
+                toast.error('Access Denied: Admin Privileges Required');
+                return;
+            }
+            // Store token in BOTH cookie (for api.js interceptor) and localStorage (for admin layout check)
+            Cookies.set('token', data.token, { expires: 30 });
             localStorage.setItem('token', data.token);
             toast.success('Welcome back, Artisan Admin!');
             router.push('/admin/dashboard');
