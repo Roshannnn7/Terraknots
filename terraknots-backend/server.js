@@ -50,9 +50,13 @@ const limiter = rateLimit({
 });
 app.use('/api/auth', limiter);
 
-// Health check — prevents Render cold start
+// HEALTH CHECK ENDPOINTS — KEEP THESE FIRST
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', uptime: process.uptime() });
+  res.json({ 
+    status: 'ok', 
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString()
+  });
 });
 
 app.get('/api/ping', (req, res) => {
@@ -104,10 +108,7 @@ app.use('/api/activity-logs', activityLogRoutes);
 app.use('/api/saved-responses', savedResponseRoutes);
 app.use('/api/testimonials', testimonialRoutes);
 
-// Health check endpoint
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date() });
-});
+
 
 
 // Root route
@@ -126,14 +127,14 @@ const server = app.listen(PORT, () => {
     );
 });
 
-// Self-ping every 14 minutes to prevent Render sleep
+// SELF-PING TO PREVENT RENDER SLEEP (production only)
 if (process.env.NODE_ENV === 'production') {
+  const SELF_URL = process.env.RENDER_EXTERNAL_URL || 'https://terraknots-backend.onrender.com';
   setInterval(() => {
-    const url = process.env.RENDER_EXTERNAL_URL || 'https://terraknots-backend.onrender.com';
-    fetch(`${url}/api/health`)
-      .then(() => console.log('Self-ping successful'))
+    fetch(`${SELF_URL}/api/health`)
+      .then(() => console.log('Self-ping OK'))
       .catch(err => console.log('Self-ping failed:', err.message));
-  }, 14 * 60 * 1000); // 14 minutes
+  }, 14 * 60 * 1000);
 }
 
 // Handle unhandled promise rejections

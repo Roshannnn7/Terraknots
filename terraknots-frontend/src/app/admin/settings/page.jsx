@@ -1,338 +1,376 @@
 'use client';
-
-import { useState, useEffect, useRef } from 'react';
-import {
-    Settings as SettingsIcon,
-    Store,
-    Palette,
-    Home,
-    CreditCard,
-    Truck,
-    Bell,
-    Share2,
-    FileText,
-    ShoppingCart,
-    Lock,
-    Settings2,
-    Save,
-    Upload,
-    Plus,
-    Trash2,
-    AlertTriangle,
-    Instagram,
-    MessageCircle,
-    Image as ImageIcon,
-    Globe,
-    ExternalLink
-} from 'lucide-react';
-import { safeGet, safePost, safePut } from '@/lib/apiClient';
+import { useState, useEffect } from 'react';
+import axios from 'axios';
 import toast from 'react-hot-toast';
-import { motion, AnimatePresence } from 'framer-motion';
 
-const AdminSettingsPage = () => {
-    const [settings, setSettings] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [saving, setSaving] = useState(false);
-    const [activeTab, setActiveTab] = useState('general');
-    const [testEmailLoading, setTestEmailLoading] = useState(false);
-    const fileInputRef = useRef(null);
+const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
-    const fetchSettings = async () => {
-        setLoading(true);
-        try {
-            const data = await safeGet('/settings/all', null);
-            setSettings(data?.settings || data?.data || data || null);
-        } catch (error) {
-            console.error('Error fetching settings:', error);
-            setSettings(null);
-            toast.error('Failed to load settings');
-        } finally {
-            setLoading(false);
-        }
-    };
+const TABS = [
+  { id: 'general', label: 'General', icon: '🏪' },
+  { id: 'appearance', label: 'Appearance', icon: '🎨' },
+  { id: 'homepage', label: 'Homepage', icon: '🏠' },
+  { id: 'payments', label: 'Payments', icon: '💰' },
+  { id: 'shipping', label: 'Shipping', icon: '🚚' },
+  { id: 'notifications', label: 'Notifications', icon: '🔔' },
+  { id: 'social', label: 'Social & SEO', icon: '🔗' },
+  { id: 'policies', label: 'Policies & FAQ', icon: '📄' }
+];
 
-    useEffect(() => {
-        fetchSettings();
-    }, []);
+export default function SettingsPage() {
+  const [activeTab, setActiveTab] = useState('general');
+  const [settings, setSettings] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [hasChanges, setHasChanges] = useState(false);
 
-    const handleUpdate = (path, value) => {
-        if (!settings) return;
-        const newSettings = { ...settings };
-        const keys = path.split('.');
-        let current = newSettings;
-        for (let i = 0; i < keys.length - 1; i++) {
-            if (!current[keys[i]]) current[keys[i]] = {};
-            current = current[keys[i]];
-        }
-        current[keys[keys.length - 1]] = value;
-        setSettings(newSettings);
-    };
+  useEffect(() => {
+    loadSettings();
+  }, []);
 
-    const handleImageUpload = async (e, path) => {
-        const file = e.target.files[0];
-        if (!file) return;
+  const loadSettings = async () => {
+    try {
+      const token = localStorage.getItem('adminToken') || localStorage.getItem('token');
+      const res = await axios.get(`${API_URL}/settings/all`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setSettings(res?.data?.data || {});
+    } catch (err) {
+      console.error('Settings load error:', err);
+      setSettings(getDefaultSettings());
+    } finally {
+      setLoading(false);
+    }
+  };
 
-        const formData = new FormData();
-        formData.append('image', file);
+  const getDefaultSettings = () => ({
+    storeName: 'TerraKnots',
+    contactEmail: 'hello@terraknots.com',
+    whatsappNumber: '919876543210',
+    instagramUrl: 'https://instagram.com/terra_knots',
+    announcementActive: true,
+    announcementText: '✨ Free shipping on orders above ₹499',
+    primaryColor: '#C4A882',
+    secondaryColor: '#8B7355',
+    accentColor: '#A8B5A2',
+    backgroundColor: '#F5F0EB',
+    productsPerPage: 12,
+    showAnimations: true,
+    showDarkMode: false,
+    heroHeading: 'Handmade with heart, knot by knot',
+    heroSubtext: 'Discover unique creations',
+    upiId: 'yourname@upi',
+    upiEnabled: true,
+    codEnabled: true,
+    codCharge: 30,
+    shippingCharge: 49,
+    freeShippingThreshold: 499,
+    emailOnNewOrder: true,
+    emailOnLowStock: true,
+    lowStockThreshold: 5
+  });
 
-        try {
-            toast.loading('Uploading image...', { id: 'uploading' });
-            const result = await safePost('/upload/image', formData, {
-                headers: { 'Content-Type': 'multipart/form-data' }
-            });
-            
-            if (result.success) {
-              handleUpdate(path, result.data?.url || result?.url);
-              toast.success('Visual updated!', { id: 'uploading' });
-            } else {
-              toast.error('Upload failed', { id: 'uploading' });
-            }
-        } catch (error) {
-            console.error('Upload error:', error);
-            toast.error('Upload failed', { id: 'uploading' });
-        }
-    };
+  const updateField = (key, value) => {
+    setSettings(prev => ({ ...prev, [key]: value }));
+    setHasChanges(true);
+  };
 
-    const saveSettings = async () => {
-        if (!settings) return;
-        setSaving(true);
-        const result = await safePut('/settings', settings);
-        if (result.success) {
-            toast.success('Settings saved successfully!');
-        } else {
-            toast.error(result.error || 'Failed to save settings');
-        }
-        setSaving(false);
-    };
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const token = localStorage.getItem('adminToken') || localStorage.getItem('token');
+      await axios.put(`${API_URL}/settings`, settings, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success('Settings saved! ✨');
+      setHasChanges(false);
+    } catch (err) {
+      toast.error('Failed to save');
+    } finally {
+      setSaving(false);
+    }
+  };
 
-    const resetToDefaults = async () => {
-        if (!window.confirm('Are you sure you want to reset ALL settings to defaults? This cannot be undone.')) return;
-        setSaving(true);
-        const result = await safePost('/settings/reset', {});
-        if (result.success) {
-            setSettings(result.data?.settings || result.data?.data || result?.settings || null);
-            toast.success('Settings reset to defaults');
-        } else {
-            toast.error('Failed to reset settings');
-        }
-        setSaving(false);
-    };
+  const handleReset = async () => {
+    if (!confirm('Reset all settings to defaults?')) return;
+    setSettings(getDefaultSettings());
+    setHasChanges(true);
+    toast.success('Settings reset to defaults');
+  };
 
-    if (loading) return (
-        <div className="flex flex-col items-center justify-center py-40 space-y-4">
-            <div className="w-12 h-12 border-4 border-[#C4A882] border-t-transparent rounded-full animate-spin" />
-            <p className="text-light italic font-accent text-lg">Waking up the looms...</p>
+  if (loading) {
+    return <div className="p-8 text-center">Loading settings...</div>;
+  }
+
+  return (
+    <div className="p-6 max-w-7xl mx-auto">
+      <div className="flex justify-between items-start mb-6">
+        <div>
+          <h1 className="text-4xl font-serif">Loom Configuration</h1>
+          <p className="text-gray-500 italic">Fine-tune the soul of TerraKnots</p>
         </div>
-    );
-
-    if (!settings) return (
-        <div className="bg-white rounded-[3rem] p-12 text-center space-y-6 shadow-sm border border-gray-100 mt-10">
-            <h2 className="text-2xl font-bold text-dark font-heading">Loom disconnected</h2>
-            <p className="text-light">We couldn't load your settings. Let's try reconnecting.</p>
-            <button onClick={fetchSettings} className="px-10 py-4 bg-[#C4A882] text-white rounded-2xl font-bold shadow-lg shadow-[#C4A882]/20 hover:scale-[1.02] transition-all">Retry Connection</button>
+        <div className="flex gap-2">
+          <button 
+            onClick={handleReset}
+            className="px-4 py-2 border border-red-300 text-red-600 rounded-xl hover:bg-red-50"
+          >
+            Reset Defaults
+          </button>
+          <button 
+            onClick={handleSave}
+            disabled={!hasChanges || saving}
+            className="px-6 py-3 bg-[#C4A882] text-white rounded-xl disabled:opacity-50 font-semibold"
+          >
+            {saving ? 'Saving...' : 'Commit Changes'}
+          </button>
         </div>
-    );
+      </div>
 
-    const tabs = [
-        { id: 'general', label: 'General', icon: Store },
-        { id: 'appearance', label: 'Appearance', icon: Palette },
-        { id: 'homepage', label: 'Homepage', icon: Home },
-        { id: 'payments', label: 'Payments', icon: CreditCard },
-        { id: 'shipping', label: 'Shipping', icon: Truck },
-        { id: 'notifications', label: 'Notifications', icon: Bell },
-        { id: 'social', label: 'Social & SEO', icon: Share2 },
-        { id: 'policies', label: 'Policies & FAQ', icon: FileText },
-        { id: 'product_cart', label: 'Product & Cart', icon: ShoppingCart },
-        { id: 'security', label: 'Security', icon: Lock },
-        { id: 'tools', label: 'Tools', icon: Settings2 },
-    ];
-
-    // SAFE FALLBACKS
-    const safeSettings = settings || {};
-    const safeFeatures = safeSettings.features || [];
-    const safeColors = safeSettings.colors || {};
-
-    // Safe access helper
-    const getVal = (path, fallback = '') => {
-      return path.split('.').reduce((obj, key) => (obj && obj[key] !== undefined) ? obj[key] : fallback, safeSettings);
-    };
-
-    return (
-        <div className="space-y-8 pb-20">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                <div>
-                    <h1 className="text-3xl font-heading font-bold text-dark">Loom Configuration</h1>
-                    <p className="text-light italic font-accent text-lg">Fine-tune the soul of TerraKnots.</p>
-                </div>
-                <div className="flex items-center space-x-4">
-                    <button
-                        onClick={resetToDefaults}
-                        className="px-6 py-3 rounded-2xl bg-red-50 text-red-500 font-bold text-sm hover:bg-red-500 hover:text-white transition-all"
-                    >
-                        Reset Defaults
-                    </button>
-                    <button
-                        onClick={saveSettings}
-                        disabled={saving}
-                        className="h-14 px-10 bg-[#C4A882] text-white rounded-2xl font-bold flex items-center space-x-3 shadow-xl shadow-[#C4A882]/20 hover:scale-[1.02] transition-all disabled:opacity-50"
-                    >
-                        {saving ? (
-                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        ) : (
-                            <>
-                                <Save size={20} />
-                                <span>Commit Changes</span>
-                            </>
-                        )}
-                    </button>
-                </div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-                {/* Sidebar Nav */}
-                <div className="lg:col-span-1 space-y-2 sticky top-24 h-fit overflow-y-auto no-scrollbar max-h-[80vh]">
-                    {tabs.map(tab => (
-                        <button
-                            key={tab.id}
-                            onClick={() => setActiveTab(tab.id)}
-                            className={`w-full flex items-center space-x-4 px-6 py-4 rounded-2xl transition-all font-bold text-sm ${activeTab === tab.id
-                                ? 'bg-[#C4A882] text-white shadow-lg shadow-[#C4A882]/20 scale-[1.02]'
-                                : 'text-light hover:bg-white hover:text-[#C4A882] border border-transparent hover:border-gray-100'
-                                }`}
-                        >
-                            <tab.icon size={20} />
-                            <span>{tab.label}</span>
-                        </button>
-                    ))}
-                </div>
-
-                {/* Form Area */}
-                <div className="lg:col-span-3 bg-white rounded-[3rem] border border-gray-100 shadow-sm p-8 md:p-12 min-h-[600px]">
-                    <AnimatePresence mode="wait">
-                        <motion.div
-                            key={activeTab}
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -10 }}
-                            className="space-y-10"
-                        >
-                            {/* TAB 1: General */}
-                            {activeTab === 'general' && (
-                                <div className="space-y-8">
-                                    <h3 className="text-xl font-bold text-dark border-b pb-4">🏪 Store Identity</h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-bold uppercase tracking-widest text-light pl-4">Store Name</label>
-                                            <input
-                                                className="w-full bg-background border-none rounded-2xl px-6 h-14 font-bold text-dark focus:ring-2 focus:ring-[#C4A882]/20 transition-all outline-none"
-                                                value={getVal('storeName')}
-                                                onChange={(e) => handleUpdate('storeName', e.target.value)}
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-bold uppercase tracking-widest text-light pl-4">Store Tagline</label>
-                                            <input
-                                                className="w-full bg-background border-none rounded-2xl px-6 h-14 font-bold text-dark focus:ring-2 focus:ring-[#C4A882]/20 transition-all outline-none"
-                                                value={getVal('storeTagline')}
-                                                onChange={(e) => handleUpdate('storeTagline', e.target.value)}
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-bold uppercase tracking-widest text-light pl-4">Contact Email</label>
-                                            <input
-                                                className="w-full bg-background border-none rounded-2xl px-6 h-14 font-bold text-dark focus:ring-2 focus:ring-[#C4A882]/20 transition-all outline-none"
-                                                value={getVal('contactEmail')}
-                                                onChange={(e) => handleUpdate('contactEmail', e.target.value)}
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-bold uppercase tracking-widest text-light pl-4">Contact Phone</label>
-                                            <input
-                                                className="w-full bg-background border-none rounded-2xl px-6 h-14 font-bold text-dark focus:ring-2 focus:ring-[#C4A882]/20 transition-all outline-none"
-                                                value={getVal('contactPhone')}
-                                                onChange={(e) => handleUpdate('contactPhone', e.target.value)}
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-bold uppercase tracking-widest text-light pl-4">WhatsApp Number (91...)</label>
-                                            <input
-                                                className="w-full bg-background border-none rounded-2xl px-6 h-14 font-bold text-dark focus:ring-2 focus:ring-[#C4A882]/20 transition-all outline-none"
-                                                value={getVal('whatsappNumber')}
-                                                onChange={(e) => handleUpdate('whatsappNumber', e.target.value)}
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-bold uppercase tracking-widest text-light pl-4">Store Address</label>
-                                            <textarea
-                                                className="w-full bg-background border-none rounded-2xl p-4 h-14 font-bold text-dark focus:ring-2 focus:ring-[#C4A882]/20 transition-all outline-none resize-none"
-                                                value={getVal('storeAddress')}
-                                                onChange={(e) => handleUpdate('storeAddress', e.target.value)}
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-6">
-                                        <div className="space-y-4">
-                                            <label className="text-[10px] font-bold uppercase tracking-widest text-light pl-4">Store Logo</label>
-                                            <div className="h-32 rounded-3xl border-2 border-dashed border-gray-100 flex flex-col items-center justify-center cursor-pointer hover:border-[#C4A882] transition-all relative overflow-hidden bg-background">
-                                                {getVal('storeLogo') ? (
-                                                    <img src={getVal('storeLogo')} alt="Logo" className="h-full object-contain" />
-                                                ) : (
-                                                    <ImageIcon size={24} className="text-light" />
-                                                )}
-                                                <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => handleImageUpload(e, 'storeLogo')} />
-                                            </div>
-                                        </div>
-                                        <div className="space-y-4">
-                                            <label className="text-[10px] font-bold uppercase tracking-widest text-light pl-4">Favicon</label>
-                                            <div className="h-32 rounded-3xl border-2 border-dashed border-gray-100 flex flex-col items-center justify-center cursor-pointer hover:border-[#C4A882] transition-all relative overflow-hidden bg-background">
-                                                {getVal('storeFavicon') ? (
-                                                    <img src={getVal('storeFavicon')} alt="Favicon" className="h-10 w-10 object-contain" />
-                                                ) : (
-                                                    <ImageIcon size={24} className="text-light" />
-                                                )}
-                                                <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => handleImageUpload(e, 'storeFavicon')} />
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="p-6 bg-red-50 rounded-3xl flex items-center justify-between border border-red-100">
-                                        <div className="flex items-center space-x-4">
-                                            <div className="w-12 h-12 bg-red-500 rounded-2xl flex items-center justify-center text-white">
-                                                <AlertTriangle size={24} />
-                                            </div>
-                                            <div>
-                                                <h4 className="font-bold text-dark">Maintenance Mode</h4>
-                                                <p className="text-xs text-light">Take the site offline for all visitors except admins.</p>
-                                            </div>
-                                        </div>
-                                        <label className="relative inline-flex items-center cursor-pointer">
-                                            <input
-                                                type="checkbox" className="sr-only peer"
-                                                checked={getVal('maintenanceMode', false)}
-                                                onChange={(e) => handleUpdate('maintenanceMode', e.target.checked)}
-                                            />
-                                            <div className="w-14 h-7 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-red-500"></div>
-                                        </label>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Additional tabs (appearance, homepage, etc) would follow the same pattern... */}
-                            {/* For brevity, focus on ensuring tab content exists and is safe */}
-                            {activeTab !== 'general' && (
-                              <div className="py-20 flex flex-col items-center justify-center space-y-6 text-center opacity-50">
-                                <SettingsIcon size={48} className="text-[#C4A882]" />
-                                <p className="text-lg font-bold text-dark">Section content is active and protected. <br/> <span className="text-sm font-medium">Use the "Commit Changes" button after any edits.</span></p>
-                              </div>
-                            )}
-                        </motion.div>
-                    </AnimatePresence>
-                </div>
-            </div>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        {/* Tab Navigation */}
+        <div className="space-y-1">
+          {TABS.map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`w-full text-left px-4 py-3 rounded-xl flex items-center gap-3 transition-all ${
+                activeTab === tab.id 
+                  ? 'bg-[#C4A882] text-white shadow-md' 
+                  : 'bg-white hover:bg-[#F5F0EB] text-[#2C2C2C]'
+              }`}
+            >
+              <span>{tab.icon}</span>
+              <span className="font-medium">{tab.label}</span>
+            </button>
+          ))}
         </div>
-    );
-};
 
-export default AdminSettingsPage;
+        {/* Tab Content */}
+        <div className="md:col-span-3 bg-white p-8 rounded-2xl shadow-sm">
+          {activeTab === 'general' && <GeneralTab settings={settings} updateField={updateField} />}
+          {activeTab === 'appearance' && <AppearanceTab settings={settings} updateField={updateField} />}
+          {activeTab === 'homepage' && <HomepageTab settings={settings} updateField={updateField} />}
+          {activeTab === 'payments' && <PaymentsTab settings={settings} updateField={updateField} />}
+          {activeTab === 'shipping' && <ShippingTab settings={settings} updateField={updateField} />}
+          {activeTab === 'notifications' && <NotificationsTab settings={settings} updateField={updateField} />}
+          {activeTab === 'social' && <SocialTab settings={settings} updateField={updateField} />}
+          {activeTab === 'policies' && <PoliciesTab settings={settings} updateField={updateField} />}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// GENERAL TAB
+function GeneralTab({ settings, updateField }) {
+  return (
+    <div>
+      <h2 className="text-2xl font-serif mb-6">🏪 General Settings</h2>
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Store Name" value={settings?.storeName} onChange={v => updateField('storeName', v)} />
+        <Field label="Contact Email" type="email" value={settings?.contactEmail} onChange={v => updateField('contactEmail', v)} />
+        <Field label="WhatsApp Number" value={settings?.whatsappNumber} onChange={v => updateField('whatsappNumber', v)} />
+        <Field label="Instagram URL" value={settings?.instagramUrl} onChange={v => updateField('instagramUrl', v)} />
+        <div className="col-span-2">
+          <Toggle 
+            label="Announcement Bar" 
+            description="Show announcement bar at top of every page"
+            checked={settings?.announcementActive} 
+            onChange={v => updateField('announcementActive', v)} 
+          />
+          {settings?.announcementActive && (
+            <Field 
+              value={settings?.announcementText} 
+              onChange={v => updateField('announcementText', v)} 
+              placeholder="Announcement message..."
+            />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// APPEARANCE TAB
+function AppearanceTab({ settings, updateField }) {
+  return (
+    <div>
+      <h2 className="text-2xl font-serif mb-6">🎨 Appearance</h2>
+      
+      <h3 className="text-lg font-semibold mb-3">Brand Colors</h3>
+      <div className="grid grid-cols-2 gap-4 mb-6">
+        <ColorField label="Primary Color" value={settings?.primaryColor || '#C4A882'} onChange={v => updateField('primaryColor', v)} />
+        <ColorField label="Secondary Color" value={settings?.secondaryColor || '#8B7355'} onChange={v => updateField('secondaryColor', v)} />
+        <ColorField label="Accent Color" value={settings?.accentColor || '#A8B5A2'} onChange={v => updateField('accentColor', v)} />
+        <ColorField label="Background" value={settings?.backgroundColor || '#F5F0EB'} onChange={v => updateField('backgroundColor', v)} />
+      </div>
+
+      <h3 className="text-lg font-semibold mb-3">Display Options</h3>
+      <div className="space-y-3">
+        <Field type="number" label="Products Per Page" value={settings?.productsPerPage || 12} onChange={v => updateField('productsPerPage', Number(v))} />
+        <Toggle label="Show Animations" checked={settings?.showAnimations} onChange={v => updateField('showAnimations', v)} />
+        <Toggle label="Enable Dark Mode" checked={settings?.showDarkMode} onChange={v => updateField('showDarkMode', v)} />
+      </div>
+    </div>
+  );
+}
+
+// HOMEPAGE TAB
+function HomepageTab({ settings, updateField }) {
+  return (
+    <div>
+      <h2 className="text-2xl font-serif mb-6">🏠 Homepage</h2>
+      <div className="space-y-4">
+        <Field label="Hero Heading" value={settings?.heroHeading} onChange={v => updateField('heroHeading', v)} />
+        <Field label="Hero Subtext" value={settings?.heroSubtext} onChange={v => updateField('heroSubtext', v)} type="textarea" />
+      </div>
+    </div>
+  );
+}
+
+// PAYMENTS TAB
+function PaymentsTab({ settings, updateField }) {
+  return (
+    <div>
+      <h2 className="text-2xl font-serif mb-6">💰 Payments</h2>
+      <div className="space-y-4">
+        <Toggle label="UPI Payment Enabled" checked={settings?.upiEnabled} onChange={v => updateField('upiEnabled', v)} />
+        <Field label="UPI ID" value={settings?.upiId} onChange={v => updateField('upiId', v)} placeholder="yourname@upi" />
+        <Toggle label="Cash on Delivery Enabled" checked={settings?.codEnabled} onChange={v => updateField('codEnabled', v)} />
+        <Field type="number" label="COD Charge (₹)" value={settings?.codCharge || 30} onChange={v => updateField('codCharge', Number(v))} />
+      </div>
+    </div>
+  );
+}
+
+// SHIPPING TAB
+function ShippingTab({ settings, updateField }) {
+  return (
+    <div>
+      <h2 className="text-2xl font-serif mb-6">🚚 Shipping</h2>
+      <div className="space-y-4">
+        <Field type="number" label="Shipping Charge (₹)" value={settings?.shippingCharge || 49} onChange={v => updateField('shippingCharge', Number(v))} />
+        <Field type="number" label="Free Shipping Above (₹)" value={settings?.freeShippingThreshold || 499} onChange={v => updateField('freeShippingThreshold', Number(v))} />
+        <Field label="Processing Time" value={settings?.processingTime} placeholder="1-2 business days" onChange={v => updateField('processingTime', v)} />
+        <Field label="Delivery Time" value={settings?.deliveryTime} placeholder="5-7 business days" onChange={v => updateField('deliveryTime', v)} />
+      </div>
+    </div>
+  );
+}
+
+// NOTIFICATIONS TAB
+function NotificationsTab({ settings, updateField }) {
+  return (
+    <div>
+      <h2 className="text-2xl font-serif mb-6">🔔 Notifications</h2>
+      <div className="space-y-3">
+        <Toggle label="Email on New Order" checked={settings?.emailOnNewOrder} onChange={v => updateField('emailOnNewOrder', v)} />
+        <Toggle label="Email on Low Stock" checked={settings?.emailOnLowStock} onChange={v => updateField('emailOnLowStock', v)} />
+        <Field type="number" label="Low Stock Threshold" value={settings?.lowStockThreshold || 5} onChange={v => updateField('lowStockThreshold', Number(v))} />
+        <Toggle label="Email on New Customer" checked={settings?.emailOnNewCustomer} onChange={v => updateField('emailOnNewCustomer', v)} />
+      </div>
+    </div>
+  );
+}
+
+// SOCIAL TAB
+function SocialTab({ settings, updateField }) {
+  return (
+    <div>
+      <h2 className="text-2xl font-serif mb-6">🔗 Social & SEO</h2>
+      <div className="space-y-4">
+        <h3 className="font-semibold">Social Links</h3>
+        <Field label="Instagram URL" value={settings?.instagramUrl} onChange={v => updateField('instagramUrl', v)} />
+        <Field label="Facebook URL" value={settings?.facebookUrl} onChange={v => updateField('facebookUrl', v)} />
+        <Field label="Pinterest URL" value={settings?.pinterestUrl} onChange={v => updateField('pinterestUrl', v)} />
+        <Field label="YouTube URL" value={settings?.youtubeUrl} onChange={v => updateField('youtubeUrl', v)} />
+        
+        <h3 className="font-semibold mt-6">SEO</h3>
+        <Field label="Meta Title" value={settings?.metaTitle} onChange={v => updateField('metaTitle', v)} />
+        <Field type="textarea" label="Meta Description" value={settings?.metaDescription} onChange={v => updateField('metaDescription', v)} />
+        <Field label="Google Analytics ID" value={settings?.googleAnalyticsId} onChange={v => updateField('googleAnalyticsId', v)} placeholder="G-XXXXXXXXXX" />
+      </div>
+    </div>
+  );
+}
+
+// POLICIES TAB
+function PoliciesTab({ settings, updateField }) {
+  return (
+    <div>
+      <h2 className="text-2xl font-serif mb-6">📄 Policies & Content</h2>
+      <div className="space-y-4">
+        <Field type="textarea" label="About Page Content" value={settings?.aboutPageContent} onChange={v => updateField('aboutPageContent', v)} rows={6} />
+        <Field type="textarea" label="Shipping Policy" value={settings?.shippingPolicy} onChange={v => updateField('shippingPolicy', v)} rows={6} />
+        <Field type="textarea" label="Return Policy" value={settings?.returnPolicy} onChange={v => updateField('returnPolicy', v)} rows={6} />
+        <Field type="textarea" label="Privacy Policy" value={settings?.privacyPolicy} onChange={v => updateField('privacyPolicy', v)} rows={6} />
+        <Field type="textarea" label="Terms & Conditions" value={settings?.termsConditions} onChange={v => updateField('termsConditions', v)} rows={6} />
+      </div>
+    </div>
+  );
+}
+
+// REUSABLE COMPONENTS
+function Field({ label, value, onChange, type = 'text', placeholder = '', rows = 3 }) {
+  return (
+    <div>
+      {label && <label className="block text-xs font-semibold text-[#8B7355] uppercase tracking-widest mb-2">{label}</label>}
+      {type === 'textarea' ? (
+        <textarea
+          value={value || ''}
+          onChange={(e) => onChange(e.target.value)}
+          rows={rows}
+          placeholder={placeholder}
+          className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#C4A882]"
+        />
+      ) : (
+        <input
+          type={type}
+          value={value || ''}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#C4A882]"
+        />
+      )}
+    </div>
+  );
+}
+
+function ColorField({ label, value, onChange }) {
+  return (
+    <div>
+      <label className="block text-xs font-semibold text-[#8B7355] uppercase tracking-widest mb-2">{label}</label>
+      <div className="flex gap-2 items-center">
+        <input
+          type="color"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-12 h-12 rounded-xl cursor-pointer border-2 border-gray-200"
+        />
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="flex-1 px-4 py-3 border border-gray-200 rounded-xl font-mono text-sm"
+        />
+      </div>
+    </div>
+  );
+}
+
+function Toggle({ label, description, checked, onChange }) {
+  return (
+    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+      <div>
+        <div className="font-medium">{label}</div>
+        {description && <div className="text-xs text-gray-500">{description}</div>}
+      </div>
+      <button
+        type="button"
+        onClick={() => onChange(!checked)}
+        className={`relative w-12 h-6 rounded-full transition-colors ${checked ? 'bg-[#C4A882]' : 'bg-gray-300'}`}
+      >
+        <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full transition-transform ${checked ? 'translate-x-6' : 'translate-x-0.5'}`} />
+      </button>
+    </div>
+  );
+}

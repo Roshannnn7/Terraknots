@@ -8,7 +8,7 @@ const {
 
 const router = express.Router();
 
-const { protect, admin } = require('../middleware/authMiddleware');
+const { protect, admin } = require('../middleware/auth');
 
 router.route('/')
   .get(getTestimonials)
