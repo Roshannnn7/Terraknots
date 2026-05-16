@@ -79,9 +79,10 @@ export default function AdminDashboard() {
       const fetchStats = async () => {
           try {
               const { data } = await api.get('/admin/dashboard/stats');
-              setStats(data.stats);
+              setStats(data?.stats || data?.data || null);
           } catch (error) {
               console.error('Error fetching stats', error);
+              setStats(null);
           } finally {
               setLoading(false);
           }
@@ -135,12 +136,11 @@ export default function AdminDashboard() {
         </div>
       </header>
 
-      {/* ROW 1: Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard title="Today's Revenue" value={`₹${stats.todayRevenue?.toLocaleString() || 0}`} icon={DollarSign} color="bg-terracotta" trend="up" trendValue="12" />
-        <StatCard title="Total Orders" value={stats.totalOrders} icon={Package} color="bg-accent" trend="up" trendValue="5" />
-        <StatCard title="Pending Actions" value={stats.lowStockProducts.length + (stats.pendingOrders || 3)} icon={AlertCircle} color="bg-yellow-500" />
-        <StatCard title="Customers" value={stats.totalCustomers} icon={Star} color="bg-secondary" />
+        <StatCard title="Today's Revenue" value={`₹${stats?.todayRevenue?.toLocaleString() || 0}`} icon={DollarSign} color="bg-terracotta" trend="up" trendValue="12" />
+        <StatCard title="Total Orders" value={stats?.totalOrders || 0} icon={Package} color="bg-accent" trend="up" trendValue="5" />
+        <StatCard title="Pending Actions" value={(stats?.lowStockProducts?.length || 0) + (stats?.pendingOrders || 3)} icon={AlertCircle} color="bg-yellow-500" />
+        <StatCard title="Customers" value={stats?.totalCustomers || 0} icon={Star} color="bg-secondary" />
       </div>
 
       {/* ROW 2: Charts */}
@@ -242,7 +242,7 @@ export default function AdminDashboard() {
                             <Package size={20} />
                         </div>
                         <div>
-                            <p className="text-sm font-bold text-dark">{stats.lowStockProducts.length} Items Low Stock</p>
+                            <p className="text-sm font-bold text-dark">{(stats?.lowStockProducts?.length || 0)} Items Low Stock</p>
                             <p className="text-[10px] text-red-600 font-bold uppercase">Replenish looms</p>
                         </div>
                     </div>

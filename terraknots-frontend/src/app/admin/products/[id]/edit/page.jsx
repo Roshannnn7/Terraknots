@@ -15,9 +15,10 @@ const EditProductPage = () => {
         const fetchProduct = async () => {
             try {
                 const { data } = await api.get(`/products/id/${id}`);
-                setProduct(data.product);
+                setProduct(data?.product || data?.data || null);
             } catch (error) {
                 console.error('Error fetching product', error);
+                setProduct(null);
             } finally {
                 setLoading(false);
             }
@@ -32,7 +33,7 @@ const EditProductPage = () => {
         <div className="space-y-10">
             <div>
                 <h1 className="text-3xl font-heading font-bold text-dark">Refine Treasure</h1>
-                <p className="text-light italic font-accent text-lg">Updating details for "{product.name}"</p>
+                <p className="text-light italic font-accent text-lg">Updating details for "{product?.name || 'Loading...'}"</p>
             </div>
             <ProductForm initialData={product} isEdit={true} />
         </div>

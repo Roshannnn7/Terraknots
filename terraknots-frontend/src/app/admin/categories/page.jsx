@@ -28,8 +28,10 @@ export default function CategoriesPage() {
             const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/categories/all`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            setCategories(res.data.data || []);
+            setCategories(res?.data?.data || res?.data || []);
         } catch (error) {
+            console.error('Failed to load categories:', error);
+            setCategories([]);
             toast.error('Failed to load categories');
         } finally {
             setLoading(false);
@@ -60,7 +62,7 @@ export default function CategoriesPage() {
                 icon: '📦',
                 color: '#C4A882',
                 image: '',
-                displayOrder: categories.length + 1,
+                displayOrder: (categories?.length || 0) + 1,
                 isActive: true
             });
         }
@@ -140,7 +142,7 @@ export default function CategoriesPage() {
                 <div className="flex justify-center items-center h-64">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
                 </div>
-            ) : categories.length === 0 ? (
+            ) : (categories?.length || 0) === 0 ? (
                 <div className="bg-white rounded-[3rem] p-20 text-center border border-gray-100 shadow-sm">
                     <Tag size={64} className="mx-auto text-light opacity-20 mb-6" />
                     <h3 className="text-2xl font-bold text-dark mb-2">No categories yet</h3>
@@ -149,7 +151,7 @@ export default function CategoriesPage() {
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {categories.map((cat) => (
+                    {(categories || []).map((cat) => (
                         <motion.div
                             key={cat._id}
                             layout

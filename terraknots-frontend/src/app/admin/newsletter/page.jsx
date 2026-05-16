@@ -25,9 +25,10 @@ const NewsletterManagementPage = () => {
         setLoading(true);
         try {
             const { data } = await api.get('/newsletter');
-            setSubscribers(data.subscribers);
+            setSubscribers(data?.subscribers || data?.data || []);
         } catch (error) {
-            console.error('Error fetching subscribers');
+            console.error('Error fetching subscribers:', error);
+            setSubscribers([]);
         } finally {
             setLoading(false);
         }
@@ -50,7 +51,7 @@ const NewsletterManagementPage = () => {
 
     const exportCSV = () => {
         const headers = ['Email', 'Subscribed At'];
-        const rows = subscribers.map(s => [s.email, format(new Date(s.subscribedAt), 'yyyy-MM-dd HH:mm:ss')]);
+        const rows = (subscribers || []).map(s => [s.email, format(new Date(s.subscribedAt), 'yyyy-MM-dd HH:mm:ss')]);
 
         let csvContent = "data:text/csv;charset=utf-8,"
             + headers.join(",") + "\n"
@@ -71,7 +72,7 @@ const NewsletterManagementPage = () => {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-heading font-bold text-dark">The Loom family</h1>
-                    <p className="text-light italic font-accent text-lg">Direct connection to your {subscribers.length} subscribers.</p>
+                    <p className="text-light italic font-accent text-lg">Direct connection to your {subscribers?.length || 0} subscribers.</p>
                 </div>
                 <div className="flex space-x-3">
                     <button
@@ -97,7 +98,7 @@ const NewsletterManagementPage = () => {
                             <Users size={24} />
                         </div>
                         <div>
-                            <h3 className="text-3xl font-heading font-bold text-dark">{subscribers.length}</h3>
+                            <h3 className="text-3xl font-heading font-bold text-dark">{subscribers?.length || 0}</h3>
                             <p className="text-[10px] font-bold uppercase tracking-widest text-light">Total Subscribers</p>
                         </div>
                     </div>
@@ -138,7 +139,7 @@ const NewsletterManagementPage = () => {
                         </thead>
                         <tbody className="divide-y divide-gray-50">
                             <AnimatePresence mode="popLayout">
-                                {subscribers.filter(s => s.email.toLowerCase().includes(search.toLowerCase())).map((sub, idx) => (
+                                {(subscribers || []).filter(s => s?.email?.toLowerCase().includes(search.toLowerCase())).map((sub, idx) => (
                                     <motion.tr
                                         key={sub._id}
                                         initial={{ opacity: 0, y: 10 }}
@@ -149,7 +150,7 @@ const NewsletterManagementPage = () => {
                                         <td className="px-8 py-4">
                                             <div className="flex items-center space-x-3">
                                                 <div className="w-8 h-8 rounded-full bg-primary/5 flex items-center justify-center text-primary text-[10px] font-bold">
-                                                    {sub.email[0].toUpperCase()}
+                                                    {sub?.email?.[0]?.toUpperCase() || '?'}
                                                 </div>
                                                 <span className="text-sm font-bold text-dark">{sub.email}</span>
                                             </div>

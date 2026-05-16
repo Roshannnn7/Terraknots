@@ -26,10 +26,11 @@ const CustomerListPage = () => {
         setLoading(true);
         try {
             const { data } = await api.get(`/admin/customers?page=${page}&limit=10&search=${search}`);
-            setCustomers(data.customers);
-            setTotalPages(data.pages);
+            setCustomers(data?.customers || data?.data || []);
+            setTotalPages(data?.pages || 1);
         } catch (error) {
-            console.error('Error fetching customers');
+            console.error('Error fetching customers:', error);
+            setCustomers([]);
         } finally {
             setLoading(false);
         }
@@ -76,7 +77,7 @@ const CustomerListPage = () => {
                         </thead>
                         <tbody className="divide-y divide-gray-50">
                             <AnimatePresence mode="popLayout">
-                                {customers.map((customer, idx) => (
+                                {(customers || []).map((customer, idx) => (
                                     <motion.tr
                                         key={customer._id}
                                         initial={{ opacity: 0, x: -10 }}
@@ -87,7 +88,7 @@ const CustomerListPage = () => {
                                         <td className="px-8 py-6">
                                             <div className="flex items-center space-x-4">
                                                 <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold shadow-sm">
-                                                    {customer.name[0]}
+                                                    {customer?.name?.[0] || '?'}
                                                 </div>
                                                 <div>
                                                     <h4 className="text-sm font-bold text-dark">{customer.name}</h4>
@@ -105,7 +106,7 @@ const CustomerListPage = () => {
                                             </div>
                                         </td>
                                         <td className="px-8 py-6">
-                                            <div className="text-sm font-bold text-primary">₹{customer.totalSpent.toLocaleString()}</div>
+                                            <div className="text-sm font-bold text-primary">₹{(customer?.totalSpent || 0).toLocaleString()}</div>
                                             <p className="text-[10px] text-light uppercase tracking-widest font-bold">Customer Value</p>
                                         </td>
                                         <td className="px-8 py-6 text-right">

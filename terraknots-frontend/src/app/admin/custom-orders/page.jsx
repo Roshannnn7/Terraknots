@@ -29,9 +29,10 @@ const CustomOrderManagement = () => {
         setLoading(true);
         try {
             const { data } = await api.get('/custom-orders');
-            setRequests(data.customOrders);
+            setRequests(data?.customOrders || data?.data || []);
         } catch (error) {
-            console.error('Error fetching custom orders');
+            console.error('Error fetching custom orders:', error);
+            setRequests([]);
         } finally {
             setLoading(false);
         }
@@ -73,7 +74,7 @@ const CustomOrderManagement = () => {
 
                 {/* Requests List */}
                 <div className="lg:col-span-2 space-y-4">
-                    {requests.map((req) => (
+                    {(requests || []).map((req) => (
                         <div
                             key={req._id}
                             onClick={() => setSelected(req)}
@@ -85,7 +86,7 @@ const CustomOrderManagement = () => {
                             <div className="flex items-center justify-between mb-4">
                                 <span className={`text-[8px] font-bold uppercase tracking-widest px-3 py-1 rounded-full ${selected?._id === req._id ? 'bg-white text-primary' : getStatusColor(req.status)
                                     }`}>
-                                    {req.status.replace('_', ' ')}
+                                    {req?.status?.replace('_', ' ') || 'NEW'}
                                 </span>
                                 <span className={`text-[8px] font-bold uppercase tracking-widest opacity-60`}>
                                     {format(new Date(req.createdAt), 'dd MMM')}

@@ -36,9 +36,10 @@ const CouponManagementPage = () => {
         setLoading(true);
         try {
             const { data } = await api.get('/coupons');
-            setCoupons(data.coupons);
+            setCoupons(data?.coupons || data?.data || []);
         } catch (error) {
-            console.error('Error fetching coupons');
+            console.error('Error fetching coupons:', error);
+            setCoupons([]);
         } finally {
             setLoading(false);
         }
@@ -100,7 +101,7 @@ const CouponManagementPage = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <AnimatePresence>
-                    {coupons.map((coupon, idx) => (
+                    {(coupons || []).map((coupon, idx) => (
                         <motion.div
                             key={coupon._id}
                             initial={{ opacity: 0, scale: 0.95 }}

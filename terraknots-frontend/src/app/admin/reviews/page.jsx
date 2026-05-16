@@ -24,8 +24,10 @@ const ReviewManagementPage = () => {
         setLoading(true);
         try {
             const { data } = await api.get('/reviews');
-            setReviews(data.reviews);
+            setReviews(data?.reviews || data?.data || []);
         } catch (error) {
+            console.error('Error fetching reviews:', error);
+            setReviews([]);
             toast.error('Error fetching reviews');
         } finally {
             setLoading(false);
@@ -66,7 +68,7 @@ const ReviewManagementPage = () => {
 
             <div className="grid grid-cols-1 gap-6">
                 <AnimatePresence mode="popLayout">
-                    {reviews.length > 0 ? reviews.map((review, idx) => (
+                    {(reviews?.length || 0) > 0 ? (reviews || []).map((review, idx) => (
                         <motion.div
                             key={review._id}
                             initial={{ opacity: 0, y: 20 }}
@@ -79,7 +81,7 @@ const ReviewManagementPage = () => {
                             <div className="flex-1 flex gap-6">
                                 <div className="hidden sm:block">
                                     <div className="w-14 h-14 rounded-2xl bg-background flex items-center justify-center text-primary group overflow-hidden border border-gray-100">
-                                        <img src={review.product?.images[0]} className="w-full h-full object-cover" alt="" />
+                                        <img src={review?.product?.images?.[0] || '/placeholder.png'} className="w-full h-full object-cover" alt="" />
                                     </div>
                                 </div>
                                 <div className="space-y-3 min-w-0">

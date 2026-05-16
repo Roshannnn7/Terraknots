@@ -46,9 +46,10 @@ const AdminSettingsPage = () => {
         setLoading(true);
         try {
             const { data } = await api.get('/settings/all');
-            setSettings(data.settings);
+            setSettings(data?.settings || data?.data || null);
         } catch (error) {
             console.error('Error fetching settings:', error);
+            setSettings(null);
             toast.error('Failed to load settings');
         } finally {
             setLoading(false);
@@ -108,7 +109,7 @@ const AdminSettingsPage = () => {
         setSaving(true);
         try {
             const { data } = await api.post('/settings/reset');
-            setSettings(data.settings);
+            setSettings(data?.settings || data?.data || null);
             toast.success('Settings reset to defaults');
         } catch (error) {
             toast.error('Failed to reset settings');

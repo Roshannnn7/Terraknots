@@ -31,9 +31,11 @@ const OrderListPage = () => {
         setLoading(true);
         try {
             const { data } = await api.get(`/orders?page=${page}&limit=10&status=${status === 'All' ? '' : status.toLowerCase()}&search=${search}`);
-            setOrders(data.orders);
-            setTotalPages(data.pages);
+            setOrders(data?.orders || data?.data || []);
+            setTotalPages(data?.pages || 1);
         } catch (error) {
+            console.error('Error fetching orders:', error);
+            setOrders([]);
             toast.error('Error fetching orders');
         } finally {
             setLoading(false);
@@ -118,7 +120,7 @@ const OrderListPage = () => {
                         </thead>
                         <tbody className="divide-y divide-gray-50">
                             <AnimatePresence mode="popLayout">
-                                {orders.map((order, idx) => (
+                                {(orders || []).map((order, idx) => (
                                     <motion.tr
                                         key={order._id}
                                         initial={{ opacity: 0, y: 10 }}
@@ -137,8 +139,8 @@ const OrderListPage = () => {
                                             {format(new Date(order.createdAt), 'dd MMM yyyy')}
                                         </td>
                                         <td className="px-8 py-6">
-                                            <div className="text-sm font-bold text-dark">₹{order.totalAmount}</div>
-                                            <div className="text-[10px] text-light">{order.items.length} Items</div>
+                                            <div className="text-sm font-bold text-dark">₹{order?.totalAmount || 0}</div>
+                                            <div className="text-[10px] text-light">{(order?.items?.length || 0)} Items</div>
                                         </td>
                                         <td className="px-8 py-6">
                                             <span className="text-[10px] font-bold uppercase tracking-widest text-light border border-gray-100 px-2 py-1 rounded-lg bg-white">

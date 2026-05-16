@@ -31,9 +31,11 @@ const ProductForm = ({ initialData = null, isEdit = false }) => {
             setFetchingCats(true);
             try {
                 const { data } = await api.get('/categories');
-                setCategories(data.categories);
+                setCategories(data?.categories || data?.data || []);
             } catch (error) {
-                console.error('Failed to load categories');
+                console.error('Failed to load categories:', error);
+                setCategories([]);
+                toast.error('Could not load categories. Please try again.');
             } finally {
                 setFetchingCats(false);
             }
@@ -44,9 +46,9 @@ const ProductForm = ({ initialData = null, isEdit = false }) => {
     const [formData, setFormData] = useState({
         name: initialData?.name || '',
         category: initialData?.category?._id || initialData?.category || '',
-        price: initialData?.price || '',
+        price: initialData?.price || 0,
         salePrice: initialData?.salePrice || '',
-        stock: initialData?.stock || '',
+        stock: initialData?.stock || 0,
         shortDescription: initialData?.shortDescription || '',
         fullDescription: initialData?.fullDescription || '',
         materials: initialData?.materials || [],
@@ -77,10 +79,10 @@ const ProductForm = ({ initialData = null, isEdit = false }) => {
 
     const removeItem = (type, value) => {
         if (type === 'material') {
-            setFormData({ ...formData, materials: formData.materials.filter(m => m !== value) });
+            setFormData({ ...formData, materials: (formData.materials || []).filter(m => m !== value) });
         }
         if (type === 'tag') {
-            setFormData({ ...formData, tags: formData.tags.filter(t => t !== value) });
+            setFormData({ ...formData, tags: (formData.tags || []).filter(t => t !== value) });
         }
     };
 
@@ -146,12 +148,12 @@ const ProductForm = ({ initialData = null, isEdit = false }) => {
                                     <option value="">Select Category</option>
                                     {fetchingCats ? (
                                         <option disabled>Loading...</option>
-                                    ) : categories.length === 0 ? (
+                                    ) : (categories?.length || 0) === 0 ? (
                                         <option disabled>No categories. Add one first.</option>
                                     ) : (
-                                        categories.map(cat => (
-                                            <option key={cat._id} value={cat.name}>
-                                                {cat.icon} {cat.name}
+                                        (categories || []).map(cat => (
+                                            <option key={cat?._id} value={cat?.name}>
+                                                {cat?.icon} {cat?.name}
                                             </option>
                                         ))
                                     )}
@@ -280,7 +282,7 @@ const ProductForm = ({ initialData = null, isEdit = false }) => {
                             <h4 className="text-sm font-bold text-dark uppercase tracking-widest">Materials</h4>
                         </div>
                         <div className="flex flex-wrap gap-2 min-h-[40px]">
-                            {formData.materials.map(m => (
+                            {(formData?.materials || []).map(m => (
                                 <span key={m} className="px-3 py-1 bg-background rounded-full text-[10px] font-bold text-dark flex items-center">
                                     {m}
                                     <button type="button" onClick={() => removeItem('material', m)} className="ml-2 hover:text-red-500"><X size={12} /></button>
@@ -306,7 +308,7 @@ const ProductForm = ({ initialData = null, isEdit = false }) => {
                             <h4 className="text-sm font-bold text-dark uppercase tracking-widest">Tags</h4>
                         </div>
                         <div className="flex flex-wrap gap-2 min-h-[40px]">
-                            {formData.tags.map(t => (
+                            {(formData?.tags || []).map(t => (
                                 <span key={t} className="px-3 py-1 bg-primary/10 rounded-full text-[10px] font-bold text-primary flex items-center">
                                     #{t}
                                     <button type="button" onClick={() => removeItem('tag', t)} className="ml-2 hover:text-red-500"><X size={12} /></button>

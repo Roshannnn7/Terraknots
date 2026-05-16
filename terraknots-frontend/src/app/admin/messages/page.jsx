@@ -27,9 +27,10 @@ const MessageManagementPage = () => {
         setLoading(true);
         try {
             const { data } = await api.get('/contact');
-            setMessages(data.messages);
+            setMessages(data?.messages || data?.data || []);
         } catch (error) {
-            console.error('Error fetching messages');
+            console.error('Error fetching messages:', error);
+            setMessages([]);
         } finally {
             setLoading(false);
         }
@@ -74,7 +75,7 @@ const MessageManagementPage = () => {
 
                 {/* Messages List */}
                 <div className="lg:col-span-2 space-y-4">
-                    {messages.length > 0 ? messages.map((msg) => (
+                    {(messages?.length || 0) > 0 ? (messages || []).map((msg) => (
                         <div
                             key={msg._id}
                             onClick={() => {
@@ -126,7 +127,7 @@ const MessageManagementPage = () => {
                                 <div className="p-10 border-b border-gray-50 flex items-start justify-between">
                                     <div className="flex items-center space-x-6">
                                         <div className="w-16 h-16 rounded-3xl bg-background flex items-center justify-center text-primary text-xl font-heading font-bold shadow-inner">
-                                            {selectedMessage.name[0]}
+                                            {selectedMessage?.name?.[0] || '?'}
                                         </div>
                                         <div>
                                             <h2 className="text-2xl font-heading font-bold text-dark">{selectedMessage.name}</h2>
