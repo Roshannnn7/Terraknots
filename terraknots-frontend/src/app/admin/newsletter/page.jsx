@@ -6,13 +6,11 @@ import {
     Download,
     Trash2,
     Users,
-    Calendar,
     Send,
-    Search,
-    ExternalLink
+    Search
 } from 'lucide-react';
-import api from '@/lib/api';
-import { toast } from 'react-toastify';
+import { safeGet, safeDelete } from '@/lib/apiClient';
+import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -24,8 +22,8 @@ const NewsletterManagementPage = () => {
     const fetchSubscribers = async () => {
         setLoading(true);
         try {
-            const { data } = await api.get('/newsletter');
-            setSubscribers(data?.subscribers || data?.data || []);
+            const data = await safeGet('/newsletter', []);
+            setSubscribers(Array.isArray(data) ? data : (data?.subscribers || data?.data || []));
         } catch (error) {
             console.error('Error fetching subscribers:', error);
             setSubscribers([]);
@@ -40,18 +38,23 @@ const NewsletterManagementPage = () => {
 
     const deleteSubscriber = async (id) => {
         if (!window.confirm('Remove this email from the family?')) return;
-        try {
-            await api.delete(`/newsletter/${id}`);
+        const result = await safeDelete(`/newsletter/${id}`);
+        if (result.success) {
             toast.success('Subscriber removed');
             fetchSubscribers();
-        } catch (error) {
-            toast.error('Deletion failed');
+        } else {
+            toast.error(result.error || 'Deletion failed');
         }
     };
 
     const exportCSV = () => {
+        if (!subscribers || subscribers.length === 0) return toast.error('No subscribers to export');
+        
         const headers = ['Email', 'Subscribed At'];
-        const rows = (subscribers || []).map(s => [s.email, format(new Date(s.subscribedAt), 'yyyy-MM-dd HH:mm:ss')]);
+        const rows = (subscribers || []).map(s => [
+            s?.email || '', 
+            s?.subscribedAt ? format(new Date(s.subscribedAt), 'yyyy-MM-dd HH:mm:ss') : ''
+        ]);
 
         let csvContent = "data:text/csv;charset=utf-8,"
             + headers.join(",") + "\n"
@@ -77,12 +80,12 @@ const NewsletterManagementPage = () => {
                 <div className="flex space-x-3">
                     <button
                         onClick={exportCSV}
-                        className="btn-secondary h-14 px-8 flex items-center space-x-2"
+                        className="h-14 px-8 bg-white border border-gray-200 rounded-2xl font-bold flex items-center space-x-2 hover:bg-gray-50 transition-all"
                     >
                         <Download size={20} />
                         <span>Export CSV</span>
                     </button>
-                    <button className="btn-primary h-14 px-8 flex items-center space-x-2">
+                    <button className="h-14 px-8 bg-[#C4A882] text-white rounded-2xl font-bold flex items-center space-x-2 hover:opacity-90 transition-all">
                         <Send size={20} />
                         <span>Compose Blast</span>
                     </button>
@@ -94,7 +97,7 @@ const NewsletterManagementPage = () => {
                 {/* Stats */}
                 <div className="lg:col-span-1 space-y-6">
                     <div className="bg-white p-8 rounded-[3rem] border border-gray-100 shadow-sm space-y-4">
-                        <div className="w-12 h-12 bg-primary/10 text-primary rounded-2xl flex items-center justify-center">
+                        <div className="w-12 h-12 bg-[#C4A882]/10 text-[#C4A882] rounded-2xl flex items-center justify-center">
                             <Users size={24} />
                         </div>
                         <div>
@@ -118,63 +121,74 @@ const NewsletterManagementPage = () => {
                 <div className="lg:col-span-2 bg-white rounded-[3rem] border border-gray-100 shadow-sm overflow-hidden min-h-[500px] relative">
                     <div className="p-6 border-b border-gray-50 bg-background/30 flex items-center gap-4">
                         <div className="flex-1 relative group">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-light group-focus-within:text-primary transition-colors" size={16} />
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-light group-focus-within:text-[#C4A882] transition-colors" size={16} />
                             <input
                                 type="text"
                                 placeholder="Find a specific email..."
-                                className="w-full bg-white border-none rounded-xl pl-10 pr-4 py-2 text-xs font-medium focus:ring-2 focus:ring-primary/20 outline-none"
+                                className="w-full bg-white border-none rounded-xl pl-10 pr-4 py-2 text-xs font-medium focus:ring-2 focus:ring-[#C4A882]/20 outline-none"
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
                             />
                         </div>
                     </div>
 
-                    <table className="w-full text-left">
-                        <thead>
-                            <tr className="border-b border-gray-50">
-                                <th className="px-8 py-4 text-[10px] font-bold uppercase tracking-widest text-light">Subscriber Email</th>
-                                <th className="px-8 py-4 text-[10px] font-bold uppercase tracking-widest text-light">Date Joined</th>
-                                <th className="px-8 py-4 text-[10px] font-bold uppercase tracking-widest text-light text-right">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-50">
-                            <AnimatePresence mode="popLayout">
-                                {(subscribers || []).filter(s => s?.email?.toLowerCase().includes(search.toLowerCase())).map((sub, idx) => (
-                                    <motion.tr
-                                        key={sub._id}
-                                        initial={{ opacity: 0, y: 10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{ delay: idx * 0.02 }}
-                                        className="group hover:bg-background/30 transition-colors"
-                                    >
-                                        <td className="px-8 py-4">
-                                            <div className="flex items-center space-x-3">
-                                                <div className="w-8 h-8 rounded-full bg-primary/5 flex items-center justify-center text-primary text-[10px] font-bold">
-                                                    {sub?.email?.[0]?.toUpperCase() || '?'}
-                                                </div>
-                                                <span className="text-sm font-bold text-dark">{sub.email}</span>
-                                            </div>
-                                        </td>
-                                        <td className="px-8 py-4 text-[10px] font-bold text-light">
-                                            {format(new Date(sub.subscribedAt), 'dd MMM yyyy')}
-                                        </td>
-                                        <td className="px-8 py-4 text-right">
-                                            <button
-                                                onClick={() => deleteSubscriber(sub._id)}
-                                                className="p-2 text-light hover:text-red-500 transition-all opacity-0 group-hover:opacity-100"
-                                            >
-                                                <Trash2 size={16} />
-                                            </button>
-                                        </td>
-                                    </motion.tr>
-                                ))}
-                            </AnimatePresence>
-                        </tbody>
-                    </table>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left">
+                          <thead>
+                              <tr className="border-b border-gray-50">
+                                  <th className="px-8 py-4 text-[10px] font-bold uppercase tracking-widest text-light">Subscriber Email</th>
+                                  <th className="px-8 py-4 text-[10px] font-bold uppercase tracking-widest text-light">Date Joined</th>
+                                  <th className="px-8 py-4 text-[10px] font-bold uppercase tracking-widest text-light text-right">Action</th>
+                              </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-50">
+                              <AnimatePresence mode="popLayout">
+                                  {(subscribers || [])
+                                    .filter(s => s?.email?.toLowerCase().includes(search.toLowerCase()))
+                                    .map((sub, idx) => (
+                                      <motion.tr
+                                          key={sub?._id || idx}
+                                          initial={{ opacity: 0, y: 10 }}
+                                          animate={{ opacity: 1, y: 0 }}
+                                          transition={{ delay: idx * 0.02 }}
+                                          className="group hover:bg-background/30 transition-colors"
+                                      >
+                                          <td className="px-8 py-4">
+                                              <div className="flex items-center space-x-3">
+                                                  <div className="w-8 h-8 rounded-full bg-[#C4A882]/5 flex items-center justify-center text-[#C4A882] text-[10px] font-bold">
+                                                      {sub?.email?.[0]?.toUpperCase() || '?'}
+                                                  </div>
+                                                  <span className="text-sm font-bold text-dark">{sub?.email || 'N/A'}</span>
+                                              </div>
+                                          </td>
+                                          <td className="px-8 py-4 text-[10px] font-bold text-light">
+                                              {sub?.subscribedAt ? format(new Date(sub.subscribedAt), 'dd MMM yyyy') : 'N/A'}
+                                          </td>
+                                          <td className="px-8 py-4 text-right">
+                                              <button
+                                                  onClick={() => deleteSubscriber(sub._id)}
+                                                  className="p-2 text-light hover:text-red-500 transition-all opacity-0 group-hover:opacity-100"
+                                              >
+                                                  <Trash2 size={16} />
+                                              </button>
+                                          </td>
+                                      </motion.tr>
+                                  ))}
+                              </AnimatePresence>
+                          </tbody>
+                      </table>
+                    </div>
+
+                    {!loading && subscribers.length === 0 && (
+                      <div className="py-32 flex flex-col items-center justify-center space-y-4">
+                        <Mail className="w-12 h-12 text-gray-200" />
+                        <p className="text-lg font-bold text-dark">No subscribers yet.</p>
+                      </div>
+                    )}
 
                     {loading && (
                         <div className="absolute inset-0 bg-white/60 backdrop-blur-sm flex items-center justify-center z-10">
-                            <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                            <div className="w-10 h-10 border-4 border-[#C4A882] border-t-transparent rounded-full animate-spin" />
                         </div>
                     )}
                 </div>

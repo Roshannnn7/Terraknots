@@ -4,15 +4,14 @@ import { useState, useEffect } from 'react';
 import {
     Star,
     CheckCircle,
-    XCircle,
     Trash2,
-    MessageCircle,
     Package,
     User,
-    Clock
+    Clock,
+    MessageCircle
 } from 'lucide-react';
-import api from '@/lib/api';
-import { toast } from 'react-toastify';
+import { safeGet, safePut, safeDelete } from '@/lib/apiClient';
+import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -23,8 +22,8 @@ const ReviewManagementPage = () => {
     const fetchReviews = async () => {
         setLoading(true);
         try {
-            const { data } = await api.get('/reviews');
-            setReviews(data?.reviews || data?.data || []);
+            const data = await safeGet('/reviews', []);
+            setReviews(Array.isArray(data) ? data : (data?.reviews || data?.data || []));
         } catch (error) {
             console.error('Error fetching reviews:', error);
             setReviews([]);
@@ -39,23 +38,23 @@ const ReviewManagementPage = () => {
     }, []);
 
     const approveReview = async (id) => {
-        try {
-            await api.put(`/reviews/${id}/approve`);
+        const result = await safePut(`/reviews/${id}/approve`, {});
+        if (result.success) {
             toast.success('Review approved for shop');
             fetchReviews();
-        } catch (error) {
-            toast.error('Approval failed');
+        } else {
+            toast.error(result.error || 'Approval failed');
         }
     };
 
     const deleteReview = async (id) => {
         if (!window.confirm('Delete this feedback forever?')) return;
-        try {
-            await api.delete(`/reviews/${id}`);
+        const result = await safeDelete(`/reviews/${id}`);
+        if (result.success) {
             toast.success('Review removed');
             fetchReviews();
-        } catch (error) {
-            toast.error('Deletion failed');
+        } else {
+            toast.error(result.error || 'Deletion failed');
         }
     };
 
@@ -68,53 +67,53 @@ const ReviewManagementPage = () => {
 
             <div className="grid grid-cols-1 gap-6">
                 <AnimatePresence mode="popLayout">
-                    {(reviews?.length || 0) > 0 ? (reviews || []).map((review, idx) => (
+                    {reviews.length > 0 ? (reviews || []).map((review, idx) => (
                         <motion.div
-                            key={review._id}
+                            key={review?._id || idx}
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.95 }}
                             transition={{ delay: idx * 0.05 }}
-                            className={`bg-white p-8 rounded-[3rem] border shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-8 transition-all ${review.isApproved ? 'border-gray-100' : 'border-primary/20 bg-primary/[0.02]'
+                            className={`bg-white p-8 rounded-[3rem] border shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-8 transition-all ${review?.isApproved ? 'border-gray-100' : 'border-[#C4A882]/20 bg-[#C4A882]/[0.02]'
                                 }`}
                         >
                             <div className="flex-1 flex gap-6">
                                 <div className="hidden sm:block">
                                     <div className="w-14 h-14 rounded-2xl bg-background flex items-center justify-center text-primary group overflow-hidden border border-gray-100">
-                                        <img src={review?.product?.images?.[0] || '/placeholder.png'} className="w-full h-full object-cover" alt="" />
+                                        <img src={review?.product?.images?.[0] || 'https://via.placeholder.com/150'} className="w-full h-full object-cover" alt="" />
                                     </div>
                                 </div>
                                 <div className="space-y-3 min-w-0">
                                     <div className="flex items-center space-x-2">
-                                        <div className="flex text-terracotta">
+                                        <div className="flex text-[#C4A882]">
                                             {[...Array(5)].map((_, i) => (
-                                                <Star key={i} size={14} fill={i < review.rating ? 'currentColor' : 'none'} className={i < review.rating ? '' : 'text-gray-200'} />
+                                                <Star key={i} size={14} fill={i < (review?.rating || 0) ? 'currentColor' : 'none'} className={i < (review?.rating || 0) ? '' : 'text-gray-200'} />
                                             ))}
                                         </div>
-                                        {!review.isApproved && (
-                                            <span className="px-3 py-0.5 bg-primary/10 text-primary text-[8px] font-bold uppercase tracking-widest rounded-full">Pending Approval</span>
+                                        {!review?.isApproved && (
+                                            <span className="px-3 py-0.5 bg-[#C4A882]/10 text-[#C4A882] text-[8px] font-bold uppercase tracking-widest rounded-full">Pending Approval</span>
                                         )}
                                     </div>
-                                    <h4 className="text-dark font-bold text-sm line-clamp-1 italic">"{review.comment}"</h4>
+                                    <h4 className="text-dark font-bold text-sm line-clamp-1 italic">"{review?.comment || 'No comment provided'}"</h4>
                                     <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
                                         <div className="flex items-center space-x-1.5 text-[10px] font-bold text-light uppercase tracking-wider">
-                                            <User size={12} className="text-primary" />
-                                            <span>{review.user?.name || review.userName}</span>
+                                            <User size={12} className="text-[#C4A882]" />
+                                            <span>{review?.user?.name || review?.userName || 'Anonymous'}</span>
                                         </div>
                                         <div className="flex items-center space-x-1.5 text-[10px] font-bold text-light uppercase tracking-wider">
-                                            <Package size={12} className="text-primary" />
-                                            <span>{review.product?.name}</span>
+                                            <Package size={12} className="text-[#C4A882]" />
+                                            <span>{review?.product?.name || 'Unknown Product'}</span>
                                         </div>
                                         <div className="flex items-center space-x-1.5 text-[10px] font-bold text-light uppercase tracking-wider">
-                                            <Clock size={12} className="text-primary" />
-                                            <span>{format(new Date(review.createdAt), 'dd MMM yyyy')}</span>
+                                            <Clock size={12} className="text-[#C4A882]" />
+                                            <span>{review?.createdAt ? format(new Date(review.createdAt), 'dd MMM yyyy') : 'N/A'}</span>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
                             <div className="flex items-center space-x-3 self-end md:self-center">
-                                {!review.isApproved && (
+                                {!review?.isApproved && (
                                     <button
                                         onClick={() => approveReview(review._id)}
                                         className="h-12 px-6 flex items-center space-x-2 bg-green-500 text-white rounded-2xl font-bold text-xs hover:bg-green-600 transition-all shadow-lg shadow-green-500/20"
@@ -131,8 +130,8 @@ const ReviewManagementPage = () => {
                                 </button>
                             </div>
                         </motion.div>
-                    )) : (
-                        <div className="bg-white rounded-[3rem] border border-dashed border-gray-200 py-32 flex flex-col items-center justify-center space-y-4 opacity-50">
+                    )) : !loading && (
+                        <div className="bg-white rounded-[3rem] border border-dashed border-gray-200 py-32 flex flex-col items-center justify-center space-y-4">
                             <Star size={48} className="text-gray-300" />
                             <p className="text-lg font-bold text-dark text-center font-heading">No feedback found to curate.</p>
                         </div>
@@ -142,7 +141,7 @@ const ReviewManagementPage = () => {
 
             {loading && (
                 <div className="fixed inset-0 bg-white/60 backdrop-blur-sm flex items-center justify-center z-50">
-                    <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                    <div className="w-10 h-10 border-4 border-[#C4A882] border-t-transparent rounded-full animate-spin" />
                 </div>
             )}
         </div>

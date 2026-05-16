@@ -2,8 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import {
-    Search,
-    Filter,
     ChevronLeft,
     ChevronRight,
     Eye,
@@ -13,9 +11,9 @@ import {
     XCircle,
     Search as SearchIcon
 } from 'lucide-react';
-import api from '@/lib/api';
+import { safeGet } from '@/lib/apiClient';
 import Link from 'next/link';
-import { toast } from 'react-toastify';
+import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -30,7 +28,10 @@ const OrderListPage = () => {
     const fetchOrders = async () => {
         setLoading(true);
         try {
-            const { data } = await api.get(`/orders?page=${page}&limit=10&status=${status === 'All' ? '' : status.toLowerCase()}&search=${search}`);
+            const data = await safeGet(`/orders?page=${page}&limit=10&status=${status === 'All' ? '' : status.toLowerCase()}&search=${search}`, {
+                orders: [],
+                pages: 1
+            });
             setOrders(data?.orders || data?.data || []);
             setTotalPages(data?.pages || 1);
         } catch (error) {
@@ -47,7 +48,7 @@ const OrderListPage = () => {
     }, [page, status]);
 
     const getStatusStyle = (s) => {
-        switch (s) {
+        switch (s?.toLowerCase()) {
             case 'delivered': return 'bg-green-100 text-green-600';
             case 'shipped': return 'bg-blue-100 text-blue-600';
             case 'packed': return 'bg-purple-100 text-purple-600';
@@ -58,7 +59,7 @@ const OrderListPage = () => {
     };
 
     const getStatusIcon = (s) => {
-        switch (s) {
+        switch (s?.toLowerCase()) {
             case 'delivered': return <CheckCircle size={14} />;
             case 'shipped': return <Truck size={14} />;
             case 'packed': return <Clock size={14} />;
@@ -82,19 +83,19 @@ const OrderListPage = () => {
                     <input
                         type="text"
                         placeholder="Search by Order ID or email..."
-                        className="w-full bg-background border-none rounded-2xl pl-12 pr-4 py-3 text-sm font-medium focus:ring-2 focus:ring-primary/20 outline-none"
+                        className="w-full bg-background border-none rounded-2xl pl-12 pr-4 py-3 text-sm font-medium focus:ring-2 focus:ring-[#C4A882]/20 outline-none"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && fetchOrders()}
                     />
                 </div>
 
-                <div className="flex bg-background p-1.5 rounded-2xl">
+                <div className="flex bg-background p-1.5 rounded-2xl overflow-x-auto no-scrollbar">
                     {['All', 'Placed', 'Confirmed', 'Shipped', 'Delivered'].map(s => (
                         <button
                             key={s}
                             onClick={() => { setStatus(s); setPage(1); }}
-                            className={`px-6 py-2 rounded-xl text-xs font-bold transition-all ${status === s ? 'bg-primary text-white shadow-md' : 'text-light hover:text-dark'
+                            className={`px-6 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${status === s ? 'bg-[#C4A882] text-white shadow-md' : 'text-light hover:text-dark'
                                 }`}
                         >
                             {s}
@@ -122,21 +123,21 @@ const OrderListPage = () => {
                             <AnimatePresence mode="popLayout">
                                 {(orders || []).map((order, idx) => (
                                     <motion.tr
-                                        key={order._id}
+                                        key={order?._id || idx}
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: idx * 0.03 }}
                                         className="group hover:bg-background/30 transition-colors"
                                     >
                                         <td className="px-8 py-6">
-                                            <div className="text-sm font-bold text-primary">#{order.orderId}</div>
+                                            <div className="text-sm font-bold text-[#C4A882]">#{order?.orderId || 'N/A'}</div>
                                         </td>
                                         <td className="px-8 py-6">
-                                            <div className="text-sm font-bold text-dark">{order.user?.name || order.guestInfo?.name}</div>
-                                            <div className="text-[10px] text-light">{order.user?.email || order.guestInfo?.email}</div>
+                                            <div className="text-sm font-bold text-dark">{order?.user?.name || order?.guestInfo?.name || 'Guest'}</div>
+                                            <div className="text-[10px] text-light">{order?.user?.email || order?.guestInfo?.email || ''}</div>
                                         </td>
                                         <td className="px-8 py-6 text-xs text-light font-medium">
-                                            {format(new Date(order.createdAt), 'dd MMM yyyy')}
+                                            {order?.createdAt ? format(new Date(order.createdAt), 'dd MMM yyyy') : 'N/A'}
                                         </td>
                                         <td className="px-8 py-6">
                                             <div className="text-sm font-bold text-dark">₹{order?.totalAmount || 0}</div>
@@ -144,19 +145,19 @@ const OrderListPage = () => {
                                         </td>
                                         <td className="px-8 py-6">
                                             <span className="text-[10px] font-bold uppercase tracking-widest text-light border border-gray-100 px-2 py-1 rounded-lg bg-white">
-                                                {order.paymentMethod}
+                                                {order?.paymentMethod || 'N/A'}
                                             </span>
                                         </td>
                                         <td className="px-8 py-6">
-                                            <div className={`inline-flex items-center space-x-2 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${getStatusStyle(order.orderStatus)}`}>
-                                                {getStatusIcon(order.orderStatus)}
-                                                <span>{order.orderStatus}</span>
+                                            <div className={`inline-flex items-center space-x-2 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${getStatusStyle(order?.orderStatus)}`}>
+                                                {getStatusIcon(order?.orderStatus)}
+                                                <span>{order?.orderStatus || 'N/A'}</span>
                                             </div>
                                         </td>
                                         <td className="px-8 py-6 text-right">
                                             <Link
-                                                href={`/admin/orders/${order._id}`}
-                                                className="p-3 bg-background text-primary rounded-xl hover:bg-primary hover:text-white transition-all inline-block"
+                                                href={`/admin/orders/${order?._id}`}
+                                                className="p-3 bg-background text-[#C4A882] rounded-xl hover:bg-[#C4A882] hover:text-white transition-all inline-block"
                                             >
                                                 <Eye size={18} />
                                             </Link>
@@ -170,8 +171,19 @@ const OrderListPage = () => {
 
                 {loading && (
                     <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] flex items-center justify-center z-10">
-                        <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                        <div className="w-10 h-10 border-4 border-[#C4A882] border-t-transparent rounded-full animate-spin" />
                     </div>
+                )}
+
+                {/* Empty State */}
+                {!loading && (orders || []).length === 0 && (
+                  <div className="py-32 flex flex-col items-center justify-center space-y-4">
+                      <div className="w-20 h-20 bg-background rounded-full flex items-center justify-center text-[#C4A882]/30">
+                          <Package className="w-10 h-10" />
+                      </div>
+                      <p className="text-lg font-bold text-dark">No orders found.</p>
+                      <button onClick={() => { setSearch(''); setStatus('All'); fetchOrders(); }} className="text-sm font-bold text-[#C4A882] underline">Clear all filters</button>
+                  </div>
                 )}
 
                 {/* Pagination */}
@@ -182,14 +194,14 @@ const OrderListPage = () => {
                             <button
                                 disabled={page === 1}
                                 onClick={() => setPage(p => p - 1)}
-                                className="p-3 bg-background rounded-xl disabled:opacity-30 hover:bg-primary/5 text-primary transition-colors"
+                                className="p-3 bg-background rounded-xl disabled:opacity-30 hover:bg-[#C4A882]/5 text-[#C4A882] transition-colors"
                             >
                                 <ChevronLeft size={18} />
                             </button>
                             <button
                                 disabled={page === totalPages}
                                 onClick={() => setPage(p => p + 1)}
-                                className="p-3 bg-background rounded-xl disabled:opacity-30 hover:bg-primary/5 text-primary transition-colors"
+                                className="p-3 bg-background rounded-xl disabled:opacity-30 hover:bg-[#C4A882]/5 text-[#C4A882] transition-colors"
                             >
                                 <ChevronRight size={18} />
                             </button>

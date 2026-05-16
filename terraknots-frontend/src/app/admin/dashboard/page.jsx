@@ -11,9 +11,7 @@ import {
     ResponsiveContainer,
     PieChart,
     Pie,
-    Cell,
-    BarChart,
-    Bar
+    Cell
 } from 'recharts';
 import { 
     DollarSign, 
@@ -27,9 +25,11 @@ import {
     CheckCircle,
     ArrowRight,
     Plus,
-    Bell
+    Bell,
+    Truck,
+    ShoppingCart
 } from 'lucide-react';
-import api from '@/lib/api';
+import { safeGet } from '@/lib/apiClient';
 import Link from 'next/link';
 
 const StatCard = ({ title, value, icon: Icon, color, trend, trendValue }) => (
@@ -71,18 +71,38 @@ const ActivityItem = ({ title, time, icon: Icon, color }) => (
 );
 
 export default function AdminDashboard() {
-  const [stats, setStats] = useState(null);
+  const [stats, setStats] = useState({
+    todayRevenue: 0,
+    totalOrders: 0,
+    totalProducts: 0,
+    totalCustomers: 0,
+    pendingOrders: 0,
+    dailyRevenue: [],
+    ordersByCategory: [],
+    lowStockProducts: []
+  });
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [visitors, setVisitors] = useState(Math.floor(Math.random() * 15) + 1);
 
   useEffect(() => {
       const fetchStats = async () => {
           try {
-              const { data } = await api.get('/admin/dashboard/stats');
-              setStats(data?.stats || data?.data || null);
-          } catch (error) {
-              console.error('Error fetching stats', error);
-              setStats(null);
+              setLoading(true);
+              const data = await safeGet('/admin/dashboard/stats', {
+                todayRevenue: 0,
+                totalOrders: 0,
+                totalProducts: 0,
+                totalCustomers: 0,
+                pendingOrders: 0,
+                dailyRevenue: [],
+                ordersByCategory: [],
+                lowStockProducts: []
+              });
+              setStats(data);
+          } catch (err) {
+              console.error('Error fetching stats', err);
+              setError('Failed to load dashboard statistics');
           } finally {
               setLoading(false);
           }
@@ -108,14 +128,6 @@ export default function AdminDashboard() {
     </div>
   );
 
-  if (!stats) return (
-    <div className="p-8 text-center py-40">
-        <AlertCircle size={48} className="mx-auto text-red-400 mb-4" />
-        <h2 className="text-2xl font-bold text-dark">Data loom disconnected</h2>
-        <p className="text-light italic">Failed to fetch dashboard intelligence.</p>
-    </div>
-  );
-
   const COLORS = ['#C4A882', '#8B7355', '#A8B5A2', '#D4A574', '#C9B09B'];
 
   return (
@@ -136,10 +148,17 @@ export default function AdminDashboard() {
         </div>
       </header>
 
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-3xl flex items-center gap-3">
+          <AlertCircle size={20} />
+          <p className="font-medium">{error}</p>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard title="Today's Revenue" value={`₹${stats?.todayRevenue?.toLocaleString() || 0}`} icon={DollarSign} color="bg-terracotta" trend="up" trendValue="12" />
         <StatCard title="Total Orders" value={stats?.totalOrders || 0} icon={Package} color="bg-accent" trend="up" trendValue="5" />
-        <StatCard title="Pending Actions" value={(stats?.lowStockProducts?.length || 0) + (stats?.pendingOrders || 3)} icon={AlertCircle} color="bg-yellow-500" />
+        <StatCard title="Pending Actions" value={(stats?.lowStockProducts?.length || 0) + (stats?.pendingOrders || 0)} icon={AlertCircle} color="bg-yellow-500" />
         <StatCard title="Customers" value={stats?.totalCustomers || 0} icon={Star} color="bg-secondary" />
       </div>
 
@@ -155,7 +174,7 @@ export default function AdminDashboard() {
           </div>
           <div className="h-[300px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={stats.dailyRevenue || []}>
+              <AreaChart data={stats?.dailyRevenue || []}>
                 <defs>
                   <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#C4A882" stopOpacity={0.3}/>
@@ -181,7 +200,7 @@ export default function AdminDashboard() {
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
-                  data={stats.ordersByCategory || [
+                  data={(stats?.ordersByCategory?.length > 0) ? stats.ordersByCategory : [
                       { name: 'Crochet', value: 40 },
                       { name: 'Resin', value: 30 },
                       { name: 'Clay', value: 20 },
@@ -192,7 +211,7 @@ export default function AdminDashboard() {
                   paddingAngle={5}
                   dataKey="value"
                 >
-                  {(stats.ordersByCategory || []).map((entry, index) => (
+                  {(stats?.ordersByCategory || []).map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
@@ -201,7 +220,7 @@ export default function AdminDashboard() {
             </ResponsiveContainer>
           </div>
           <div className="grid grid-cols-2 gap-2 pt-4">
-              {(stats.ordersByCategory || []).slice(0, 4).map((entry, index) => (
+              {(stats?.ordersByCategory || []).slice(0, 4).map((entry, index) => (
                   <div key={entry.name} className="flex items-center space-x-2">
                       <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }} />
                       <span className="text-[10px] font-bold text-light uppercase truncate">{entry.name}</span>
@@ -228,7 +247,7 @@ export default function AdminDashboard() {
                             <Clock size={20} />
                         </div>
                         <div>
-                            <p className="text-sm font-bold text-dark">5 Orders Pending</p>
+                            <p className="text-sm font-bold text-dark">{stats?.pendingOrders || 0} Orders Pending</p>
                             <p className="text-[10px] text-orange-600 font-bold uppercase">Ready to ship</p>
                         </div>
                     </div>
@@ -256,7 +275,7 @@ export default function AdminDashboard() {
                             <MessageCircle size={20} />
                         </div>
                         <div>
-                            <p className="text-sm font-bold text-dark">3 Unread Messages</p>
+                            <p className="text-sm font-bold text-dark">Messages Pending</p>
                             <p className="text-[10px] text-blue-600 font-bold uppercase">Response needed</p>
                         </div>
                     </div>
@@ -279,11 +298,11 @@ export default function AdminDashboard() {
                 <span className="text-[10px] font-bold text-light uppercase tracking-widest">Real-time</span>
             </div>
             <div className="space-y-8 overflow-y-auto max-h-[400px] no-scrollbar">
-                <ActivityItem title="New order TK-342 placed" time="2 min ago" icon={Package} color="bg-terracotta/10 text-terracotta" />
-                <ActivityItem title="Product 'Crochet Bow' updated" time="15 min ago" icon={Star} color="bg-accent/10 text-accent" />
-                <ActivityItem title="New customer registered" time="1 hour ago" icon={MessageCircle} color="bg-secondary/10 text-secondary" />
-                <ActivityItem title="UPI Payment TK-340 verified" time="3 hours ago" icon={CheckCircle} color="bg-green-50 text-green-500" />
-                <ActivityItem title="Order TK-338 marked as shipped" time="5 hours ago" icon={Truck} color="bg-blue-50 text-blue-500" />
+                <ActivityItem title="New order placed" time="Just now" icon={Package} color="bg-terracotta/10 text-terracotta" />
+                <ActivityItem title="Product updated" time="Recently" icon={Star} color="bg-accent/10 text-accent" />
+                <ActivityItem title="New customer registered" time="Today" icon={MessageCircle} color="bg-secondary/10 text-secondary" />
+                <ActivityItem title="Payment verified" time="Today" icon={CheckCircle} color="bg-green-50 text-green-500" />
+                <ActivityItem title="Order shipped" time="Today" icon={Truck} color="bg-blue-50 text-blue-500" />
             </div>
         </div>
 
@@ -292,7 +311,7 @@ export default function AdminDashboard() {
             <div className="relative z-10 space-y-8">
                 <h3 className="font-heading text-xl font-bold">Quick Actions</h3>
                 <div className="grid grid-cols-2 gap-4">
-                    <Link href="/admin/products/add" className="p-6 bg-white/10 hover:bg-white/20 rounded-3xl border border-white/10 transition-all flex flex-col items-center justify-center space-y-2 group">
+                    <Link href="/admin/products/new" className="p-6 bg-white/10 hover:bg-white/20 rounded-3xl border border-white/10 transition-all flex flex-col items-center justify-center space-y-2 group">
                         <div className="w-10 h-10 rounded-full bg-white text-dark flex items-center justify-center group-hover:rotate-90 transition-transform">
                             <Plus size={20} />
                         </div>

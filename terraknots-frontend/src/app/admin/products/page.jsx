@@ -5,7 +5,6 @@ import {
     Plus,
     Search,
     Filter,
-    MoreVertical,
     Edit2,
     Trash2,
     Eye,
@@ -15,9 +14,9 @@ import {
     CheckCircle,
     XCircle
 } from 'lucide-react';
-import api from '@/lib/api';
+import { safeGet, safeDelete } from '@/lib/apiClient';
 import Link from 'next/link';
-import { toast } from 'react-toastify';
+import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const ProductListPage = () => {
@@ -31,11 +30,16 @@ const ProductListPage = () => {
     const fetchProducts = async () => {
         setLoading(true);
         try {
-            const { data } = await api.get(`/products?page=${page}&limit=10&search=${search}&category=${category === 'All' ? '' : category}`);
-            setProducts(data.products);
-            setTotalPages(data.pages);
+            const data = await safeGet(`/products?page=${page}&limit=10&search=${search}&category=${category === 'All' ? '' : category}`, {
+                products: [],
+                pages: 1
+            });
+            setProducts(data?.products || []);
+            setTotalPages(data?.pages || 1);
         } catch (error) {
+            console.error('Error fetching products:', error);
             toast.error('Error fetching products');
+            setProducts([]);
         } finally {
             setLoading(false);
         }
@@ -54,12 +58,12 @@ const ProductListPage = () => {
 
     const deleteProduct = async (id) => {
         if (!window.confirm('Are you sure you want to delete this treasure?')) return;
-        try {
-            await api.delete(`/products/${id}`);
+        const result = await safeDelete(`/products/${id}`);
+        if (result.success) {
             toast.success('Product deleted successfully');
             fetchProducts();
-        } catch (error) {
-            toast.error('Error deleting product');
+        } else {
+            toast.error(result.error || 'Error deleting product');
         }
     };
 
@@ -96,11 +100,11 @@ const ProductListPage = () => {
                     value={category}
                     onChange={(e) => { setCategory(e.target.value); setPage(1); }}
                 >
-                    <option>All Categories</option>
-                    <option>Crochet</option>
-                    <option>Resin</option>
-                    <option>Clay</option>
-                    <option>Decor</option>
+                    <option value="All">All Categories</option>
+                    <option value="Crochet">Crochet</option>
+                    <option value="Resin">Resin</option>
+                    <option value="Clay">Clay</option>
+                    <option value="Decor">Decor</option>
                 </select>
 
                 <button className="p-3 bg-background text-light rounded-2xl hover:text-primary transition-colors">
@@ -124,9 +128,9 @@ const ProductListPage = () => {
                         </thead>
                         <tbody className="divide-y divide-gray-50">
                             <AnimatePresence mode="popLayout">
-                                {products.map((product, idx) => (
+                                {(products || []).map((product, idx) => (
                                     <motion.tr
-                                        key={product._id}
+                                        key={product._id || idx}
                                         initial={{ opacity: 0, x: -10 }}
                                         animate={{ opacity: 1, x: 0 }}
                                         exit={{ opacity: 0, scale: 0.95 }}
@@ -136,57 +140,57 @@ const ProductListPage = () => {
                                         <td className="px-8 py-4">
                                             <div className="flex items-center space-x-4">
                                                 <div className="w-14 h-14 rounded-2xl overflow-hidden shadow-sm border border-gray-50 flex-shrink-0">
-                                                    <img src={product.images[0]} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                                                    <img src={product?.images?.[0] || 'https://via.placeholder.com/150'} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                                                 </div>
                                                 <div className="min-w-0">
-                                                    <h4 className="text-sm font-bold text-dark truncate max-w-[200px]">{product.name}</h4>
-                                                    <p className="text-[10px] text-light font-medium truncate">SKU: TK-{product._id.slice(-6).toUpperCase()}</p>
+                                                    <h4 className="text-sm font-bold text-dark truncate max-w-[200px]">{product?.name || 'Untitled'}</h4>
+                                                    <p className="text-[10px] text-light font-medium truncate">SKU: TK-{product?._id?.slice(-6).toUpperCase() || 'XXXXXX'}</p>
                                                 </div>
                                             </div>
                                         </td>
                                         <td className="px-8 py-4">
                                             <span className="px-3 py-1 bg-primary/10 text-primary rounded-lg text-[10px] font-bold uppercase tracking-wider">
-                                                {product.category}
+                                                {product?.category || 'Uncategorized'}
                                             </span>
                                         </td>
                                         <td className="px-8 py-4">
-                                            <div className="text-sm font-bold text-dark">₹{product.salePrice || product.price}</div>
-                                            {product.salePrice && (
-                                                <div className="text-[10px] text-light line-through">₹{product.price}</div>
+                                            <div className="text-sm font-bold text-dark">₹{product?.salePrice || product?.price || 0}</div>
+                                            {product?.salePrice && product?.price && (
+                                                <div className="text-[10px] text-light line-through">₹{product?.price}</div>
                                             )}
                                         </td>
                                         <td className="px-8 py-4">
-                                            <div className={`text-xs font-bold ${product.stock < 5 ? 'text-red-500' : 'text-dark'}`}>
-                                                {product.stock} Units
+                                            <div className={`text-xs font-bold ${product?.stock < 5 ? 'text-red-500' : 'text-dark'}`}>
+                                                {product?.stock || 0} Units
                                             </div>
                                             <div className="w-20 h-1 bg-gray-100 rounded-full mt-2 overflow-hidden">
                                                 <div
-                                                    className={`h-full rounded-full ${product.stock < 5 ? 'bg-red-500' : 'bg-green-500'}`}
-                                                    style={{ width: `${Math.min((product.stock / 20) * 100, 100)}%` }}
+                                                    className={`h-full rounded-full ${product?.stock < 5 ? 'bg-red-500' : 'bg-green-500'}`}
+                                                    style={{ width: `${Math.min(((product?.stock || 0) / 20) * 100, 100)}%` }}
                                                 />
                                             </div>
                                         </td>
                                         <td className="px-8 py-4">
                                             <div className="flex items-center space-x-2">
-                                                {product.isActive ? (
+                                                {product?.isActive ? (
                                                     <CheckCircle size={14} className="text-green-500" />
                                                 ) : (
                                                     <XCircle size={14} className="text-red-400" />
                                                 )}
-                                                <span className={`text-[10px] font-bold uppercase tracking-wider ${product.isActive ? 'text-green-600' : 'text-red-400'}`}>
-                                                    {product.isActive ? 'Active' : 'Hidden'}
+                                                <span className={`text-[10px] font-bold uppercase tracking-wider ${product?.isActive ? 'text-green-600' : 'text-red-400'}`}>
+                                                    {product?.isActive ? 'Active' : 'Hidden'}
                                                 </span>
                                             </div>
                                         </td>
                                         <td className="px-8 py-4 text-right">
                                             <div className="flex items-center justify-end space-x-2">
-                                                <Link href={`/product/${product.slug}`} target="_blank" className="p-2 text-light hover:text-primary transition-colors">
+                                                <Link href={`/product/${product?.slug}`} target="_blank" className="p-2 text-light hover:text-primary transition-colors">
                                                     <Eye size={18} />
                                                 </Link>
-                                                <Link href={`/admin/products/${product._id}/edit`} className="p-2 text-light hover:text-accent transition-colors">
+                                                <Link href={`/admin/products/${product?._id}/edit`} className="p-2 text-light hover:text-accent transition-colors">
                                                     <Edit2 size={18} />
                                                 </Link>
-                                                <button onClick={() => deleteProduct(product._id)} className="p-2 text-light hover:text-red-500 transition-colors">
+                                                <button onClick={() => deleteProduct(product?._id)} className="p-2 text-light hover:text-red-500 transition-colors">
                                                     <Trash2 size={18} />
                                                 </button>
                                             </div>
@@ -200,18 +204,18 @@ const ProductListPage = () => {
 
                 {loading && (
                     <div className="absolute inset-x-0 bottom-0 top-20 bg-white/60 backdrop-blur-sm flex items-center justify-center z-20">
-                        <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                        <div className="w-10 h-10 border-4 border-[#C4A882] border-t-transparent rounded-full animate-spin" />
                     </div>
                 )}
 
                 {/* Empty State */}
-                {!loading && products.length === 0 && (
+                {!loading && (products || []).length === 0 && (
                     <div className="py-32 flex flex-col items-center justify-center space-y-4">
                         <div className="w-20 h-20 bg-background rounded-full flex items-center justify-center text-primary/30">
                             <Package size={40} />
                         </div>
-                        <p className="text-lg font-bold text-dark">No pieces found in this category.</p>
-                        <button onClick={() => { setSearch(''); setCategory('All'); fetchProducts(); }} className="text-sm font-bold text-primary underline">Clear all filters</button>
+                        <p className="text-lg font-bold text-dark">No pieces found.</p>
+                        <button onClick={() => { setSearch(''); setCategory('All'); fetchProducts(); }} className="text-sm font-bold text-[#C4A882] underline">Clear all filters</button>
                     </div>
                 )}
 

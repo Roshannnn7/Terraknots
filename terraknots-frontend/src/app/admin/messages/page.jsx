@@ -4,19 +4,15 @@ import { useState, useEffect } from 'react';
 import {
     Mail,
     MessageSquare,
-    User,
-    Clock,
-    CheckCircle2,
-    Circle,
-    Eye,
     Trash2,
     Reply,
-    Edit2
+    Edit2,
+    AlertCircle
 } from 'lucide-react';
-import api from '@/lib/api';
+import { safeGet, safePut, safeDelete } from '@/lib/apiClient';
+import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
-import { toast } from 'react-toastify';
 
 const MessageManagementPage = () => {
     const [messages, setMessages] = useState([]);
@@ -26,8 +22,9 @@ const MessageManagementPage = () => {
     const fetchMessages = async () => {
         setLoading(true);
         try {
-            const { data } = await api.get('/contact');
-            setMessages(data?.messages || data?.data || []);
+            const data = await safeGet('/contact', []);
+            const msgList = Array.isArray(data) ? data : (data?.messages || data?.data || []);
+            setMessages(msgList);
         } catch (error) {
             console.error('Error fetching messages:', error);
             setMessages([]);
@@ -40,27 +37,27 @@ const MessageManagementPage = () => {
         fetchMessages();
     }, []);
 
-    const updateStatus = async (id, status) => {
-        try {
-            await api.put(`/contact/${id}/status`, { status });
+    const updateStatus = async (id, status, extra = {}) => {
+        const result = await safePut(`/contact/${id}/status`, { status, ...extra });
+        if (result.success) {
             fetchMessages();
             if (selectedMessage?._id === id) {
-                setSelectedMessage({ ...selectedMessage, status });
+                setSelectedMessage(prev => ({ ...prev, status, ...extra }));
             }
-        } catch (error) {
-            toast.error('Failed to update message status');
+        } else {
+            toast.error(result.error || 'Failed to update message status');
         }
     };
 
     const deleteMessage = async (id) => {
         if (!window.confirm('Archive this message permanently?')) return;
-        try {
-            await api.delete(`/contact/${id}`);
+        const result = await safeDelete(`/contact/${id}`);
+        if (result.success) {
             toast.success('Message archived');
             fetchMessages();
             setSelectedMessage(null);
-        } catch (error) {
-            toast.error('Deletion failed');
+        } else {
+            toast.error(result.error || 'Deletion failed');
         }
     };
 
@@ -75,39 +72,39 @@ const MessageManagementPage = () => {
 
                 {/* Messages List */}
                 <div className="lg:col-span-2 space-y-4">
-                    {(messages?.length || 0) > 0 ? (messages || []).map((msg) => (
+                    {messages.length > 0 ? (messages || []).map((msg, idx) => (
                         <div
-                            key={msg._id}
+                            key={msg?._id || idx}
                             onClick={() => {
                                 setSelectedMessage(msg);
-                                if (msg.status === 'new') updateStatus(msg._id, 'read');
+                                if (msg?.status === 'new') updateStatus(msg._id, 'read');
                             }}
-                            className={`p-6 rounded-[2rem] border cursor-pointer transition-all ${selectedMessage?._id === msg._id
-                                    ? 'bg-primary border-primary text-white shadow-xl shadow-primary/20 scale-[1.02]'
-                                    : 'bg-white border-gray-100 hover:border-primary/30 text-dark'
+                            className={`p-6 rounded-[2rem] border cursor-pointer transition-all ${selectedMessage?._id === msg?._id
+                                    ? 'bg-[#C4A882] border-[#C4A882] text-white shadow-xl shadow-[#C4A882]/20 scale-[1.02]'
+                                    : 'bg-white border-gray-100 hover:border-[#C4A882]/30 text-dark'
                                 }`}
                         >
                             <div className="flex items-start justify-between mb-3">
-                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${selectedMessage?._id === msg._id ? 'bg-white/20' : 'bg-background'
+                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${selectedMessage?._id === msg?._id ? 'bg-white/20' : 'bg-background'
                                     }`}>
-                                    <Mail size={18} className={selectedMessage?._id === msg._id ? 'text-white' : 'text-primary'} />
+                                    <Mail size={18} className={selectedMessage?._id === msg?._id ? 'text-white' : 'text-[#C4A882]'} />
                                 </div>
                                 <div className="text-right">
-                                    <span className={`text-[8px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full ${msg.status === 'new'
-                                            ? (selectedMessage?._id === msg._id ? 'bg-white text-primary' : 'bg-primary text-white')
-                                            : (selectedMessage?._id === msg._id ? 'bg-white/10 text-white border border-white/20' : 'bg-gray-100 text-light')
+                                    <span className={`text-[8px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full ${msg?.status === 'new'
+                                            ? (selectedMessage?._id === msg?._id ? 'bg-white text-[#C4A882]' : 'bg-[#C4A882] text-white')
+                                            : (selectedMessage?._id === msg?._id ? 'bg-white/10 text-white border border-white/20' : 'bg-gray-100 text-light')
                                         }`}>
-                                        {msg.status}
+                                        {msg?.status || 'N/A'}
                                     </span>
                                     <p className={`text-[8px] font-bold uppercase tracking-widest mt-1 opacity-60`}>
-                                        {format(new Date(msg.createdAt), 'dd MMM')}
+                                        {msg?.createdAt ? format(new Date(msg.createdAt), 'dd MMM') : 'N/A'}
                                     </p>
                                 </div>
                             </div>
-                            <h4 className="text-sm font-bold truncate pr-6">{msg.subject}</h4>
-                            <p className={`text-xs truncate ${selectedMessage?._id === msg._id ? 'text-white/70' : 'text-light'}`}>{msg.name}</p>
+                            <h4 className="text-sm font-bold truncate pr-6">{msg?.subject || 'No Subject'}</h4>
+                            <p className={`text-xs truncate ${selectedMessage?._id === msg?._id ? 'text-white/70' : 'text-light'}`}>{msg?.name || 'Anonymous'}</p>
                         </div>
-                    )) : (
+                    )) : !loading && (
                         <div className="py-20 text-center opacity-30 italic text-sm">No incoming letters yet.</div>
                     )}
                 </div>
@@ -126,12 +123,12 @@ const MessageManagementPage = () => {
                                 {/* View Header */}
                                 <div className="p-10 border-b border-gray-50 flex items-start justify-between">
                                     <div className="flex items-center space-x-6">
-                                        <div className="w-16 h-16 rounded-3xl bg-background flex items-center justify-center text-primary text-xl font-heading font-bold shadow-inner">
+                                        <div className="w-16 h-16 rounded-3xl bg-background flex items-center justify-center text-[#C4A882] text-xl font-heading font-bold shadow-inner">
                                             {selectedMessage?.name?.[0] || '?'}
                                         </div>
                                         <div>
-                                            <h2 className="text-2xl font-heading font-bold text-dark">{selectedMessage.name}</h2>
-                                            <p className="text-sm text-primary font-bold">{selectedMessage.email}</p>
+                                            <h2 className="text-2xl font-heading font-bold text-dark">{selectedMessage?.name || 'Unknown'}</h2>
+                                            <p className="text-sm text-[#C4A882] font-bold">{selectedMessage?.email || 'No email'}</p>
                                         </div>
                                     </div>
                                     <div className="flex items-center space-x-2">
@@ -148,15 +145,15 @@ const MessageManagementPage = () => {
                                 <div className="flex-1 p-10 space-y-8 overflow-y-auto no-scrollbar">
                                     <div className="space-y-2">
                                         <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-light">Subject</label>
-                                        <h3 className="text-xl font-bold text-dark italic font-accent underline decoration-primary/20 underline-offset-8">
-                                            {selectedMessage.subject}
+                                        <h3 className="text-xl font-bold text-dark italic font-accent underline decoration-[#C4A882]/20 underline-offset-8">
+                                            {selectedMessage?.subject || 'No Subject'}
                                         </h3>
                                     </div>
 
                                     <div className="p-8 bg-background/50 rounded-[2.5rem] relative">
-                                        <MessageSquare size={40} className="absolute -top-4 -left-4 text-primary/5 -rotate-12" />
+                                        <MessageSquare size={40} className="absolute -top-4 -left-4 text-[#C4A882]/5 -rotate-12" />
                                         <p className="text-dark font-medium leading-relaxed font-body whitespace-pre-wrap">
-                                            {selectedMessage.message}
+                                            {selectedMessage?.message || 'No message content.'}
                                         </p>
                                     </div>
 
@@ -167,28 +164,20 @@ const MessageManagementPage = () => {
                                             <label className="text-[10px] font-bold uppercase tracking-[0.2em]">Internal Artisan Notes</label>
                                         </div>
                                         <textarea
-                                            className="w-full bg-background border-none rounded-[2rem] p-6 text-sm focus:ring-2 focus:ring-primary/20 transition-all resize-none min-h-[120px]"
+                                            className="w-full bg-background border-none rounded-[2rem] p-6 text-sm focus:ring-2 focus:ring-[#C4A882]/20 transition-all resize-none min-h-[120px] outline-none"
                                             placeholder="Add notes about this inquiry (e.g. 'Processing refund', 'Special custom order request')..."
-                                            value={selectedMessage.adminNotes || ''}
+                                            value={selectedMessage?.adminNotes || ''}
                                             onChange={(e) => {
                                                 const val = e.target.value;
                                                 setSelectedMessage(prev => ({ ...prev, adminNotes: val }));
-                                                // Debounced or direct save
                                             }}
-                                            onBlur={async () => {
-                                                try {
-                                                    await api.put(`/contact/${selectedMessage._id}/status`, { adminNotes: selectedMessage.adminNotes });
-                                                    toast.success('Notes saved');
-                                                } catch (error) {
-                                                    toast.error('Failed to save notes');
-                                                }
-                                            }}
+                                            onBlur={() => updateStatus(selectedMessage._id, selectedMessage.status, { adminNotes: selectedMessage.adminNotes })}
                                         />
                                     </div>
                                 </div>
 
                                 {/* View Footer/Actions */}
-                                <div className="p-10 bg-gray-50/50 flex items-center justify-between border-t border-gray-50">
+                                <div className="p-10 bg-gray-50/50 flex flex-col sm:flex-row items-center justify-between border-t border-gray-50 gap-4">
                                     <div className="flex items-center space-x-4">
                                         <span className="text-[10px] font-bold text-light uppercase tracking-widest">Mark as:</span>
                                         <div className="flex bg-white p-1.5 rounded-2xl border border-gray-100">
@@ -196,9 +185,9 @@ const MessageManagementPage = () => {
                                                 <button
                                                     key={s}
                                                     onClick={() => updateStatus(selectedMessage._id, s)}
-                                                    className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${selectedMessage.status === s
-                                                            ? 'bg-primary text-white shadow-sm'
-                                                            : 'text-light hover:text-primary'
+                                                    className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${selectedMessage?.status === s
+                                                            ? 'bg-[#C4A882] text-white shadow-sm'
+                                                            : 'text-light hover:text-[#C4A882]'
                                                         }`}
                                                 >
                                                     {s}
@@ -207,8 +196,8 @@ const MessageManagementPage = () => {
                                         </div>
                                     </div>
                                     <a
-                                        href={`mailto:${selectedMessage.email}?subject=Re: ${selectedMessage.subject}`}
-                                        className="btn-primary h-12 px-8 flex items-center space-x-2 shadow-lg shadow-primary/20"
+                                        href={`mailto:${selectedMessage?.email}?subject=Re: ${selectedMessage?.subject || ''}`}
+                                        className="w-full sm:w-auto h-12 px-8 flex items-center justify-center space-x-2 bg-[#C4A882] text-white rounded-2xl font-bold shadow-lg shadow-[#C4A882]/20 hover:scale-[1.02] transition-all"
                                     >
                                         <Reply size={18} />
                                         <span>Send Response</span>
@@ -218,7 +207,7 @@ const MessageManagementPage = () => {
                         ) : (
                             <div className="h-full bg-white rounded-[3rem] border border-dashed border-gray-100 flex flex-col items-center justify-center space-y-6 opacity-30 p-20 text-center">
                                 <div className="w-24 h-24 bg-background rounded-full flex items-center justify-center">
-                                    <Mail size={48} className="text-primary" />
+                                    <Mail size={48} className="text-[#C4A882]" />
                                 </div>
                                 <div>
                                     <h3 className="text-2xl font-heading font-bold text-dark">Workbench is Clear</h3>
@@ -233,7 +222,7 @@ const MessageManagementPage = () => {
 
             {loading && (
                 <div className="fixed inset-0 bg-white/60 backdrop-blur-sm flex items-center justify-center z-50">
-                    <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                    <div className="w-10 h-10 border-4 border-[#C4A882] border-t-transparent rounded-full animate-spin" />
                 </div>
             )}
         </div>

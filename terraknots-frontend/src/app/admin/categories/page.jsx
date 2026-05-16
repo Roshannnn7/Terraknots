@@ -1,10 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import axios from 'axios';
-import { toast } from 'react-hot-toast';
-import { Tag, Plus, Edit, Trash2, GripVertical, X, Check } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { Tag, Plus, Edit, Trash2, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { safeGet, safePost, safePut, safeDelete } from '@/lib/apiClient';
 
 export default function CategoriesPage() {
     const [categories, setCategories] = useState([]);
@@ -24,11 +24,8 @@ export default function CategoriesPage() {
     const fetchCategories = async () => {
         setLoading(true);
         try {
-            const token = localStorage.getItem('token');
-            const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/categories/all`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            setCategories(res?.data?.data || res?.data || []);
+            const data = await safeGet('/categories/all', []);
+            setCategories(Array.isArray(data) ? data : []);
         } catch (error) {
             console.error('Failed to load categories:', error);
             setCategories([]);
@@ -46,13 +43,13 @@ export default function CategoriesPage() {
         if (cat) {
             setEditingCategory(cat);
             setFormData({
-                name: cat.name,
+                name: cat.name || '',
                 description: cat.description || '',
                 icon: cat.icon || '📦',
                 color: cat.color || '#C4A882',
                 image: cat.image || '',
                 displayOrder: cat.displayOrder || 0,
-                isActive: cat.isActive
+                isActive: cat.isActive !== false
             });
         } else {
             setEditingCategory(null);
@@ -71,50 +68,41 @@ export default function CategoriesPage() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        try {
-            const token = localStorage.getItem('token');
-            if (editingCategory) {
-                await axios.put(`${process.env.NEXT_PUBLIC_API_URL}/categories/${editingCategory._id}`, formData, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                toast.success('Category updated');
-            } else {
-                await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/categories`, formData, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                toast.success('Category created');
-            }
+        if (!formData.name.trim()) return toast.error('Name is required');
+
+        let result;
+        if (editingCategory) {
+            result = await safePut(`/categories/${editingCategory._id}`, formData);
+        } else {
+            result = await safePost('/categories', formData);
+        }
+
+        if (result.success) {
+            toast.success(editingCategory ? 'Category updated' : 'Category created');
             setIsModalOpen(false);
             fetchCategories();
-        } catch (error) {
-            toast.error(error.response?.data?.message || 'Something went wrong');
+        } else {
+            toast.error(result.error || 'Something went wrong');
         }
     };
 
     const handleDelete = async (id) => {
         if (!window.confirm('Are you sure you want to delete this category?')) return;
-        try {
-            const token = localStorage.getItem('token');
-            await axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/categories/${id}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+        const result = await safeDelete(`/categories/${id}`);
+        if (result.success) {
             toast.success('Category deleted');
             fetchCategories();
-        } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to delete');
+        } else {
+            toast.error(result.error || 'Failed to delete');
         }
     };
 
     const toggleStatus = async (cat) => {
-        try {
-            const token = localStorage.getItem('token');
-            await axios.put(`${process.env.NEXT_PUBLIC_API_URL}/categories/${cat._id}`, 
-                { isActive: !cat.isActive }, 
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
+        const result = await safePut(`/categories/${cat._id}`, { isActive: !cat.isActive });
+        if (result.success) {
             toast.success(`Category ${!cat.isActive ? 'activated' : 'deactivated'}`);
             fetchCategories();
-        } catch (error) {
+        } else {
             toast.error('Failed to update status');
         }
     };
@@ -124,7 +112,7 @@ export default function CategoriesPage() {
             <div className="flex justify-between items-center mb-10">
                 <div>
                     <h1 className="text-4xl font-heading font-bold text-dark flex items-center gap-3">
-                        <Tag className="text-primary" />
+                        <Tag className="text-[#C4A882]" />
                         Category Management
                     </h1>
                     <p className="text-light italic font-accent text-lg mt-2">Organize your handmade collections</p>
@@ -140,14 +128,14 @@ export default function CategoriesPage() {
 
             {loading ? (
                 <div className="flex justify-center items-center h-64">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#C4A882]"></div>
                 </div>
-            ) : (categories?.length || 0) === 0 ? (
+            ) : (categories || []).length === 0 ? (
                 <div className="bg-white rounded-[3rem] p-20 text-center border border-gray-100 shadow-sm">
                     <Tag size={64} className="mx-auto text-light opacity-20 mb-6" />
                     <h3 className="text-2xl font-bold text-dark mb-2">No categories yet</h3>
                     <p className="text-light mb-8">Start by creating your first product collection</p>
-                    <button onClick={() => handleOpenModal()} className="btn-primary">Create Category</button>
+                    <button onClick={() => handleOpenModal()} className="px-8 py-4 bg-[#C4A882] text-white rounded-full">Create Category</button>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -162,14 +150,14 @@ export default function CategoriesPage() {
                             <div className="flex justify-between items-start mb-6">
                                 <div 
                                     className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shadow-inner"
-                                    style={{ backgroundColor: `${cat.color}20` }}
+                                    style={{ backgroundColor: `${cat.color || '#C4A882'}20` }}
                                 >
-                                    {cat.icon}
+                                    {cat.icon || '📦'}
                                 </div>
                                 <div className="flex gap-2">
                                     <button 
                                         onClick={() => handleOpenModal(cat)}
-                                        className="p-3 bg-background text-light hover:text-primary hover:bg-primary/10 rounded-xl transition-all"
+                                        className="p-3 bg-background text-light hover:text-[#C4A882] hover:bg-[#C4A882]/10 rounded-xl transition-all"
                                     >
                                         <Edit size={18} />
                                     </button>
@@ -183,7 +171,7 @@ export default function CategoriesPage() {
                             </div>
 
                             <div className="mb-6">
-                                <h3 className="text-xl font-bold text-dark mb-1">{cat.name}</h3>
+                                <h3 className="text-xl font-bold text-dark mb-1">{cat.name || 'Untitled'}</h3>
                                 <p className="text-sm text-light line-clamp-2 min-h-[2.5rem]">{cat.description || 'No description'}</p>
                             </div>
 
@@ -195,7 +183,7 @@ export default function CategoriesPage() {
                                     </div>
                                     <div className="text-center">
                                         <p className="text-[10px] text-light font-bold uppercase tracking-widest">Order</p>
-                                        <p className="text-sm font-bold text-dark">#{cat.displayOrder}</p>
+                                        <p className="text-sm font-bold text-dark">#{cat.displayOrder || 0}</p>
                                     </div>
                                 </div>
                                 <button 
@@ -243,7 +231,7 @@ export default function CategoriesPage() {
                                         <input
                                             required
                                             type="text"
-                                            className="w-full bg-background border-none rounded-2xl px-6 h-14 font-bold text-dark focus:ring-2 focus:ring-primary/20 transition-all"
+                                            className="w-full bg-background border-none rounded-2xl px-6 h-14 font-bold text-dark focus:ring-2 focus:ring-[#C4A882]/20 transition-all outline-none"
                                             placeholder="e.g. Crochet Flowers"
                                             value={formData.name}
                                             onChange={(e) => setFormData({...formData, name: e.target.value})}
@@ -253,7 +241,7 @@ export default function CategoriesPage() {
                                         <label className="block text-[10px] font-bold text-light uppercase tracking-widest mb-2">Description</label>
                                         <textarea
                                             rows="3"
-                                            className="w-full bg-background border-none rounded-2xl px-6 py-4 font-medium text-dark focus:ring-2 focus:ring-primary/20 transition-all resize-none"
+                                            className="w-full bg-background border-none rounded-2xl px-6 py-4 font-medium text-dark focus:ring-2 focus:ring-[#C4A882]/20 transition-all resize-none outline-none"
                                             placeholder="What makes this collection special?"
                                             value={formData.description}
                                             onChange={(e) => setFormData({...formData, description: e.target.value})}
@@ -263,7 +251,7 @@ export default function CategoriesPage() {
                                         <label className="block text-[10px] font-bold text-light uppercase tracking-widest mb-2">Icon (Emoji)</label>
                                         <input
                                             type="text"
-                                            className="w-full bg-background border-none rounded-2xl px-6 h-14 text-2xl text-center focus:ring-2 focus:ring-primary/20 transition-all"
+                                            className="w-full bg-background border-none rounded-2xl px-6 h-14 text-2xl text-center focus:ring-2 focus:ring-[#C4A882]/20 transition-all outline-none"
                                             value={formData.icon}
                                             onChange={(e) => setFormData({...formData, icon: e.target.value})}
                                         />
@@ -279,7 +267,7 @@ export default function CategoriesPage() {
                                             />
                                             <input
                                                 type="text"
-                                                className="flex-1 bg-background border-none rounded-2xl px-4 h-14 font-mono text-sm focus:ring-2 focus:ring-primary/20 transition-all"
+                                                className="flex-1 bg-background border-none rounded-2xl px-4 h-14 font-mono text-sm focus:ring-2 focus:ring-[#C4A882]/20 transition-all outline-none"
                                                 value={formData.color}
                                                 onChange={(e) => setFormData({...formData, color: e.target.value})}
                                             />
@@ -289,7 +277,7 @@ export default function CategoriesPage() {
                                         <label className="block text-[10px] font-bold text-light uppercase tracking-widest mb-2">Banner Image URL</label>
                                         <input
                                             type="text"
-                                            className="w-full bg-background border-none rounded-2xl px-6 h-14 font-medium text-dark focus:ring-2 focus:ring-primary/20 transition-all"
+                                            className="w-full bg-background border-none rounded-2xl px-6 h-14 font-medium text-dark focus:ring-2 focus:ring-[#C4A882]/20 transition-all outline-none"
                                             placeholder="https://..."
                                             value={formData.image}
                                             onChange={(e) => setFormData({...formData, image: e.target.value})}
@@ -299,7 +287,7 @@ export default function CategoriesPage() {
                                         <label className="block text-[10px] font-bold text-light uppercase tracking-widest mb-2">Display Order</label>
                                         <input
                                             type="number"
-                                            className="w-full bg-background border-none rounded-2xl px-6 h-14 font-bold text-dark focus:ring-2 focus:ring-primary/20 transition-all"
+                                            className="w-full bg-background border-none rounded-2xl px-6 h-14 font-bold text-dark focus:ring-2 focus:ring-[#C4A882]/20 transition-all outline-none"
                                             value={formData.displayOrder}
                                             onChange={(e) => setFormData({...formData, displayOrder: e.target.value})}
                                         />
@@ -308,7 +296,7 @@ export default function CategoriesPage() {
                                         <label className="flex items-center gap-3 cursor-pointer group mt-6">
                                             <div 
                                                 onClick={() => setFormData({...formData, isActive: !formData.isActive})}
-                                                className={`w-12 h-6 rounded-full transition-all relative ${formData.isActive ? 'bg-primary' : 'bg-gray-200'}`}
+                                                className={`w-12 h-6 rounded-full transition-all relative ${formData.isActive ? 'bg-[#C4A882]' : 'bg-gray-200'}`}
                                             >
                                                 <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${formData.isActive ? 'left-7' : 'left-1'}`}></div>
                                             </div>
@@ -327,7 +315,7 @@ export default function CategoriesPage() {
                                     </button>
                                     <button
                                         type="submit"
-                                        className="flex-[2] h-14 rounded-2xl bg-primary text-white font-bold shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                                        className="flex-[2] h-14 rounded-2xl bg-[#C4A882] text-white font-bold shadow-lg shadow-[#C4A882]/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
                                     >
                                         {editingCategory ? 'Update Collection' : 'Create Collection'}
                                     </button>

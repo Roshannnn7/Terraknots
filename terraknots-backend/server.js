@@ -70,6 +70,8 @@ const categoryRoutes = require('./routes/categoryRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const activityLogRoutes = require('./routes/activityLogRoutes');
 const savedResponseRoutes = require('./routes/savedResponseRoutes');
+const testimonialRoutes = require('./routes/testimonialRoutes');
+
 
 // Mount routers
 app.use('/api/auth', authRoutes);
@@ -91,6 +93,13 @@ app.use('/api/upload', uploadRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/activity-logs', activityLogRoutes);
 app.use('/api/saved-responses', savedResponseRoutes);
+app.use('/api/testimonials', testimonialRoutes);
+
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date() });
+});
+
 
 // Root route
 app.get('/', (req, res) => {

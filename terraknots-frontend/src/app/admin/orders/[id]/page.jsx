@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import api from '@/lib/api';
-import { toast } from 'react-toastify';
+import { safeGet, safePut } from '@/lib/apiClient';
+import toast from 'react-hot-toast';
 import {
     ArrowLeft,
     Package,
@@ -12,9 +12,9 @@ import {
     MapPin,
     CreditCard,
     Clock,
-    ExternalLink,
     ChevronDown,
-    Printer
+    Printer,
+    AlertCircle
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { motion } from 'framer-motion';
@@ -29,12 +29,18 @@ const AdminOrderDetail = () => {
     const [courierName, setCourierName] = useState('Delhivery');
 
     const fetchOrder = async () => {
+        setLoading(true);
         try {
-            const { data } = await api.get(`/orders/${id}`);
-            setOrder(data.order);
-            setTrackingId(data.order.trackingId || '');
-            setCourierName(data.order.courierName || 'Delhivery');
+            const data = await safeGet(`/orders/${id}`, null);
+            if (data) {
+                setOrder(data.order || data);
+                setTrackingId(data.order?.trackingId || data.trackingId || '');
+                setCourierName(data.order?.courierName || data.courierName || 'Delhivery');
+            } else {
+                toast.error('Order not found');
+            }
         } catch (error) {
+            console.error('Error fetching order:', error);
             toast.error('Error fetching order details');
         } finally {
             setLoading(false);
@@ -47,39 +53,54 @@ const AdminOrderDetail = () => {
 
     const updateStatus = async (status) => {
         setUpdating(true);
-        try {
-            await api.put(`/orders/${id}/status`, { orderStatus: status });
+        const result = await safePut(`/orders/${id}/status`, { orderStatus: status });
+        if (result.success) {
             toast.success(`Order marked as ${status}`);
             fetchOrder();
-        } catch (error) {
-            toast.error('Failed to update status');
-        } finally {
-            setUpdating(false);
+        } else {
+            toast.error(result.error || 'Failed to update status');
         }
+        setUpdating(false);
     };
 
     const updatePaymentStatus = async (status) => {
-        try {
-            await api.put(`/orders/${id}/payment-status`, { paymentStatus: status });
+        const result = await safePut(`/orders/${id}/payment-status`, { paymentStatus: status });
+        if (result.success) {
             toast.success(`Payment marked as ${status}`);
             fetchOrder();
-        } catch (error) {
-            toast.error('Failed to update payment status');
+        } else {
+            toast.error(result.error || 'Failed to update payment status');
         }
     };
 
     const saveTracking = async () => {
-        try {
-            await api.put(`/orders/${id}/tracking`, { trackingId, courierName });
+        const result = await safePut(`/orders/${id}/tracking`, { trackingId, courierName });
+        if (result.success) {
             toast.success('Tracking info saved!');
             fetchOrder();
-        } catch (error) {
-            toast.error('Failed to save tracking');
+        } else {
+            toast.error(result.error || 'Failed to save tracking');
         }
     };
 
-    if (loading) return <div className="animate-pulse h-screen bg-gray-50 rounded-[3rem]" />;
-    if (!order) return <div className="text-center py-20 font-heading">Order not found</div>;
+    if (loading) {
+      return (
+        <div className="p-20 text-center">
+          <div className="w-10 h-10 border-4 border-[#C4A882] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-500 italic">Tracking down the order...</p>
+        </div>
+      );
+    }
+
+    if (!order) {
+      return (
+        <div className="p-20 text-center">
+          <AlertCircle size={48} className="mx-auto text-red-400 mb-4" />
+          <h2 className="text-2xl font-serif text-[#2C2C2C]">Order not found</h2>
+          <button onClick={() => router.back()} className="mt-4 text-[#8B7355] underline">Go back</button>
+        </div>
+      );
+    }
 
     const orderStatuses = ['placed', 'confirmed', 'packed', 'shipped', 'delivered', 'cancelled'];
     const paymentStatuses = ['pending', 'paid', 'failed'];
@@ -93,18 +114,20 @@ const AdminOrderDetail = () => {
                         <ArrowLeft size={20} />
                     </button>
                     <div>
-                        <h1 className="text-3xl font-heading font-bold text-dark">Order #{order.orderId}</h1>
-                        <p className="text-light italic font-accent text-lg">Placed on {format(new Date(order.createdAt), 'PPPP p')}</p>
+                        <h1 className="text-3xl font-heading font-bold text-dark">Order #{order?.orderId || 'N/A'}</h1>
+                        <p className="text-light italic font-accent text-lg">
+                          Placed on {order?.createdAt ? format(new Date(order.createdAt), 'PPPP p') : 'N/A'}
+                        </p>
                     </div>
                 </div>
                 <div className="flex items-center space-x-3">
-                    <button className="btn-secondary h-12 px-6 flex items-center space-x-2">
+                    <button className="h-12 px-6 rounded-2xl font-bold text-sm flex items-center space-x-2 border border-gray-200 hover:bg-gray-50 transition-colors">
                         <Printer size={18} />
                         <span>Print Invoice</span>
                     </button>
                     <div className="relative group">
                         <button className={`h-12 px-6 rounded-2xl font-bold text-sm flex items-center space-x-2 text-white bg-dark`}>
-                            <span>Status: {order.orderStatus.toUpperCase()}</span>
+                            <span>Status: {(order?.orderStatus || 'Placed').toUpperCase()}</span>
                             <ChevronDown size={16} />
                         </button>
                         <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-gray-100 rounded-2xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 overflow-hidden">
@@ -131,21 +154,21 @@ const AdminOrderDetail = () => {
                     {/* Items List */}
                     <div className="bg-white p-10 rounded-[3rem] border border-gray-100 shadow-sm">
                         <div className="flex items-center space-x-3 mb-8">
-                            <Package size={20} className="text-primary" />
+                            <Package size={20} className="text-[#C4A882]" />
                             <h3 className="text-xl font-heading font-bold text-dark">Treasures Ordered</h3>
                         </div>
                         <div className="divide-y divide-gray-50">
-                            {order.items.map((item, idx) => (
+                            {(order?.items || []).map((item, idx) => (
                                 <div key={idx} className="py-6 flex items-center justify-between group">
                                     <div className="flex items-center space-x-4">
-                                        <img src={item.image} alt={item.name} className="w-16 h-16 rounded-2xl object-cover shadow-sm group-hover:scale-105 transition-transform" />
+                                        <img src={item?.image || 'https://via.placeholder.com/150'} alt={item?.name} className="w-16 h-16 rounded-2xl object-cover shadow-sm group-hover:scale-105 transition-transform" />
                                         <div>
-                                            <h4 className="font-bold text-dark text-sm">{item.name}</h4>
-                                            <p className="text-[10px] text-light font-bold">₹{item.price} × {item.quantity}</p>
+                                            <h4 className="font-bold text-dark text-sm">{item?.name || 'Untitled'}</h4>
+                                            <p className="text-[10px] text-light font-bold">₹{item?.price || 0} × {item?.quantity || 0}</p>
                                         </div>
                                     </div>
                                     <div className="text-right">
-                                        <div className="text-sm font-bold text-dark">₹{item.price * item.quantity}</div>
+                                        <div className="text-sm font-bold text-dark">₹{(item?.price || 0) * (item?.quantity || 0)}</div>
                                     </div>
                                 </div>
                             ))}
@@ -155,19 +178,19 @@ const AdminOrderDetail = () => {
                         <div className="mt-8 pt-8 border-t-2 border-dashed border-gray-100 space-y-3">
                             <div className="flex justify-between text-sm text-light font-medium">
                                 <span>Subtotal</span>
-                                <span>₹{order.subtotal}</span>
+                                <span>₹{order?.subtotal || 0}</span>
                             </div>
                             <div className="flex justify-between text-sm text-light font-medium">
                                 <span>Shipping Fee</span>
-                                <span>₹{order.shippingCharge}</span>
+                                <span>₹{order?.shippingCharge || 0}</span>
                             </div>
-                            {order.discount > 0 && (
+                            {(order?.discount || 0) > 0 && (
                                 <div className="flex justify-between text-sm text-green-600 font-bold">
-                                    <span>Discount ({order.couponCode})</span>
+                                    <span>Discount ({order?.couponCode || 'N/A'})</span>
                                     <span>-₹{order.discount}</span>
                                 </div>
                             )}
-                            {order.codCharge > 0 && (
+                            {(order?.codCharge || 0) > 0 && (
                                 <div className="flex justify-between text-sm text-light font-medium">
                                     <span>COD Collection Fee</span>
                                     <span>₹{order.codCharge}</span>
@@ -175,7 +198,7 @@ const AdminOrderDetail = () => {
                             )}
                             <div className="flex justify-between text-xl font-heading font-bold text-dark pt-3">
                                 <span>Total Amount</span>
-                                <span className="text-primary">₹{order.totalAmount}</span>
+                                <span className="text-[#C4A882]">₹{order?.totalAmount || 0}</span>
                             </div>
                         </div>
                     </div>
@@ -183,7 +206,7 @@ const AdminOrderDetail = () => {
                     {/* Logistics Tracking */}
                     <div className="bg-white p-10 rounded-[3rem] border border-gray-100 shadow-sm space-y-8">
                         <div className="flex items-center space-x-3">
-                            <Truck size={20} className="text-primary" />
+                            <Truck size={20} className="text-[#C4A882]" />
                             <h3 className="text-xl font-heading font-bold text-dark">Shipping & Logistics</h3>
                         </div>
 
@@ -192,7 +215,7 @@ const AdminOrderDetail = () => {
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-bold uppercase tracking-widest text-light pl-4">Courier Partner</label>
                                     <select
-                                        className="input-field h-14"
+                                        className="w-full bg-background border-none rounded-2xl px-6 h-14 font-bold text-dark focus:ring-2 focus:ring-[#C4A882]/20 transition-all outline-none"
                                         value={courierName}
                                         onChange={(e) => setCourierName(e.target.value)}
                                     >
@@ -204,12 +227,12 @@ const AdminOrderDetail = () => {
                                     </select>
                                 </div>
                             </div>
-                            <div className="space-y-4 text-right">
+                            <div className="space-y-4">
                                 <div className="space-y-2">
-                                    <label className="text-[10px] font-bold uppercase tracking-widest text-light pr-4">Tracking Number (AWB)</label>
+                                    <label className="text-[10px] font-bold uppercase tracking-widest text-light pl-4">Tracking Number (AWB)</label>
                                     <input
                                         type="text"
-                                        className="input-field h-14"
+                                        className="w-full bg-background border-none rounded-2xl px-6 h-14 font-bold text-dark focus:ring-2 focus:ring-[#C4A882]/20 transition-all outline-none"
                                         placeholder="Enter AWB here..."
                                         value={trackingId}
                                         onChange={(e) => setTrackingId(e.target.value)}
@@ -219,7 +242,7 @@ const AdminOrderDetail = () => {
                         </div>
                         <button
                             onClick={saveTracking}
-                            className="w-full py-4 bg-primary text-white rounded-2xl font-bold shadow-lg shadow-primary/20 hover:scale-[1.01] transition-all"
+                            className="w-full py-4 bg-[#C4A882] text-white rounded-2xl font-bold shadow-lg shadow-[#C4A882]/20 hover:scale-[1.01] transition-all"
                         >
                             Update Tracking Information
                         </button>
@@ -232,23 +255,23 @@ const AdminOrderDetail = () => {
                     {/* Customer Info */}
                     <div className="bg-white p-8 rounded-[3rem] border border-gray-100 shadow-sm space-y-6">
                         <div className="flex items-center space-x-3">
-                            <User size={18} className="text-primary" />
+                            <User size={18} className="text-[#C4A882]" />
                             <h4 className="text-sm font-bold text-dark uppercase tracking-widest">Customer Details</h4>
                         </div>
                         <div className="space-y-4">
                             <div className="flex items-center space-x-3 p-3 bg-background rounded-2xl">
-                                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
-                                    {(order.user?.name || order.guestInfo?.name || 'G')[0]}
+                                <div className="w-10 h-10 rounded-full bg-[#C4A882]/10 flex items-center justify-center text-[#C4A882] font-bold">
+                                    {(order?.user?.name || order?.guestInfo?.name || 'G')[0]}
                                 </div>
                                 <div>
-                                    <p className="text-sm font-bold text-dark">{order.user?.name || order.guestInfo?.name}</p>
-                                    <p className="text-[10px] text-light uppercase font-bold tracking-wider">{order.user ? 'Registered User' : 'Guest Checkout'}</p>
+                                    <p className="text-sm font-bold text-dark">{order?.user?.name || order?.guestInfo?.name || 'Guest'}</p>
+                                    <p className="text-[10px] text-light uppercase font-bold tracking-wider">{order?.user ? 'Registered User' : 'Guest Checkout'}</p>
                                 </div>
                             </div>
                             <div className="px-4 space-y-2">
                                 <p className="text-[10px] font-bold text-light uppercase tracking-widest">Contact Information</p>
-                                <p className="text-sm text-dark font-medium">{order.user?.email || order.guestInfo?.email}</p>
-                                <p className="text-sm text-dark font-medium">{order.user?.phone || order.guestInfo?.phone}</p>
+                                <p className="text-sm text-dark font-medium">{order?.user?.email || order?.guestInfo?.email || 'No email'}</p>
+                                <p className="text-sm text-dark font-medium">{order?.user?.phone || order?.guestInfo?.phone || 'No phone'}</p>
                             </div>
                         </div>
                     </div>
@@ -256,17 +279,17 @@ const AdminOrderDetail = () => {
                     {/* Shipping Address */}
                     <div className="bg-white p-8 rounded-[3rem] border border-gray-100 shadow-sm space-y-6">
                         <div className="flex items-center space-x-3">
-                            <MapPin size={18} className="text-primary" />
+                            <MapPin size={18} className="text-[#C4A882]" />
                             <h4 className="text-sm font-bold text-dark uppercase tracking-widest">Delivery Destination</h4>
                         </div>
                         <div className="px-4 space-y-2">
-                            <p className="text-[10px] font-bold text-light uppercase tracking-widest">{order.shippingAddress.fullName}</p>
+                            <p className="text-[10px] font-bold text-light uppercase tracking-widest">{order?.shippingAddress?.fullName || 'N/A'}</p>
                             <p className="text-sm text-dark font-medium leading-relaxed">
-                                {order.shippingAddress.addressLine1},<br />
-                                {order.shippingAddress.addressLine2 && <>{order.shippingAddress.addressLine2},<br /></>}
-                                {order.shippingAddress.city}, {order.shippingAddress.state} - {order.shippingAddress.pincode}
+                                {order?.shippingAddress?.addressLine1 || 'N/A'},<br />
+                                {order?.shippingAddress?.addressLine2 && <>{order.shippingAddress.addressLine2},<br /></>}
+                                {order?.shippingAddress?.city || 'N/A'}, {order?.shippingAddress?.state || 'N/A'} - {order?.shippingAddress?.pincode || 'N/A'}
                             </p>
-                            {order.shippingAddress.landmark && (
+                            {order?.shippingAddress?.landmark && (
                                 <p className="text-[10px] italic text-light">Landmark: {order.shippingAddress.landmark}</p>
                             )}
                         </div>
@@ -275,20 +298,20 @@ const AdminOrderDetail = () => {
                     {/* Payment Detail */}
                     <div className="bg-white p-8 rounded-[3rem] border border-gray-100 shadow-sm space-y-6">
                         <div className="flex items-center space-x-3">
-                            <CreditCard size={18} className="text-primary" />
+                            <CreditCard size={18} className="text-[#C4A882]" />
                             <h4 className="text-sm font-bold text-dark uppercase tracking-widest">Payment Flow</h4>
                         </div>
                         <div className="px-4 space-y-4">
                             <div className="flex justify-between items-center">
                                 <span className="text-[10px] font-bold text-light uppercase">Method</span>
-                                <span className="text-xs font-bold text-dark uppercase tracking-widest">{order.paymentMethod}</span>
+                                <span className="text-xs font-bold text-dark uppercase tracking-widest">{order?.paymentMethod || 'N/A'}</span>
                             </div>
                             <div className="flex justify-between items-center">
                                 <span className="text-[10px] font-bold text-light uppercase">Status</span>
                                 <div className="relative group">
-                                    <button className={`px-3 py-1 rounded-lg text-[10px] font-bold uppercase transition-all flex items-center space-x-1 ${order.paymentStatus === 'paid' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600 hover:bg-red-200'
+                                    <button className={`px-3 py-1 rounded-lg text-[10px] font-bold uppercase transition-all flex items-center space-x-1 ${order?.paymentStatus === 'paid' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600 hover:bg-red-200'
                                         }`}>
-                                        <span>{order.paymentStatus}</span>
+                                        <span>{order?.paymentStatus || 'Pending'}</span>
                                         <ChevronDown size={12} />
                                     </button>
                                     <div className="absolute right-0 top-full mt-2 w-32 bg-white border border-gray-100 rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 overflow-hidden">
@@ -304,23 +327,17 @@ const AdminOrderDetail = () => {
                                     </div>
                                 </div>
                             </div>
-                            {order.manualPaymentTransactionId && (
+                            {order?.manualPaymentTransactionId && (
                                 <div className="p-3 bg-background rounded-xl border border-primary/10">
                                     <p className="text-[10px] font-bold uppercase text-light mb-1">Transaction ID</p>
-                                    <p className="text-xs font-bold text-primary break-all">{order.manualPaymentTransactionId}</p>
-                                </div>
-                            )}
-                            {order.razorpayPaymentId && (
-                                <div className="flex justify-between items-center">
-                                    <span className="text-[10px] font-bold text-light uppercase">RP ID</span>
-                                    <span className="text-[10px] font-bold text-dark">{order.razorpayPaymentId}</span>
+                                    <p className="text-xs font-bold text-[#C4A882] break-all">{order.manualPaymentTransactionId}</p>
                                 </div>
                             )}
                         </div>
                     </div>
 
                     {/* Order Notes */}
-                    {order.orderNotes && (
+                    {order?.orderNotes && (
                         <div className="bg-white p-8 rounded-[3rem] border border-gray-100 shadow-sm space-y-3">
                             <div className="flex items-center space-x-2 text-light uppercase tracking-[0.2em] text-[10px] font-bold">
                                 <Clock size={14} />

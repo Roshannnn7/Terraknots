@@ -18,8 +18,8 @@ import {
     Settings as SettingsIcon,
     ShoppingCart
 } from 'lucide-react';
-import api from '@/lib/api';
-import { toast } from 'react-toastify';
+import { safeGet } from '@/lib/apiClient';
+import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const ActivityLogPage = () => {
@@ -31,10 +31,10 @@ const ActivityLogPage = () => {
     const fetchLogs = async () => {
         setLoading(true);
         try {
-            const { data } = await api.get('/activity-logs');
-            setLogs(data.logs || []);
+            const data = await safeGet('/activity-logs', { logs: [] });
+            setLogs(data?.logs || data?.data || data || []);
         } catch (error) {
-            toast.error('Failed to load activity logs');
+            console.error('Failed to load activity logs', error);
         } finally {
             setLoading(false);
         }
@@ -44,7 +44,7 @@ const ActivityLogPage = () => {
         fetchLogs();
     }, []);
 
-    const getIcon = (action) => {
+    const getIcon = (action = '') => {
         const a = action.toLowerCase();
         if (a.includes('create') || a.includes('add')) return <div className="p-2 bg-green-50 text-green-600 rounded-xl"><CheckCircle size={18} /></div>;
         if (a.includes('update') || a.includes('edit')) return <div className="p-2 bg-blue-50 text-blue-600 rounded-xl"><Activity size={18} /></div>;
@@ -53,7 +53,7 @@ const ActivityLogPage = () => {
         return <div className="p-2 bg-gray-50 text-gray-600 rounded-xl"><Info size={18} /></div>;
     };
 
-    const getModuleIcon = (module) => {
+    const getModuleIcon = (module = '') => {
         const m = module.toLowerCase();
         if (m.includes('product')) return <Package size={14} />;
         if (m.includes('category')) return <Tag size={14} />;
@@ -62,12 +62,13 @@ const ActivityLogPage = () => {
         return <Activity size={14} />;
     };
 
-    const filteredLogs = logs.filter(log => {
+    const filteredLogs = (logs || []).filter(log => {
+        if (!log) return false;
         const matchesSearch = 
-            log.action.toLowerCase().includes(searchTerm.toLowerCase()) || 
-            log.details?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            log.admin?.name?.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesFilter = filter === 'all' || log.module.toLowerCase() === filter;
+            (log?.action || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
+            (log?.details || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (log?.admin?.name || '').toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesFilter = filter === 'all' || (log?.module || '').toLowerCase() === filter;
         return matchesSearch && matchesFilter;
     });
 
@@ -95,7 +96,7 @@ const ActivityLogPage = () => {
                     <input 
                         type="text" 
                         placeholder="Search by action, admin, or details..." 
-                        className="input-field h-12 pl-14"
+                        className="w-full bg-background border-none rounded-2xl pl-14 pr-6 h-12 font-medium text-dark focus:ring-2 focus:ring-[#C4A882]/20 transition-all outline-none"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
@@ -103,7 +104,7 @@ const ActivityLogPage = () => {
                 <div className="flex items-center space-x-2 w-full md:w-auto">
                     <Filter className="text-light" size={18} />
                     <select 
-                        className="input-field h-12 w-full md:w-48"
+                        className="w-full md:w-48 bg-background border-none rounded-2xl px-6 h-12 font-bold text-dark focus:ring-2 focus:ring-[#C4A882]/20 transition-all outline-none"
                         value={filter}
                         onChange={(e) => setFilter(e.target.value)}
                     >
@@ -138,51 +139,53 @@ const ActivityLogPage = () => {
                                     </tr>
                                 ))
                             ) : (
-                                filteredLogs.map((log) => (
-                                    <tr key={log._id} className="hover:bg-background/30 transition-colors group">
+                                filteredLogs.map((log, idx) => (
+                                    <tr key={log?._id || idx} className="hover:bg-background/30 transition-colors group">
                                         <td className="px-8 py-6">
                                             <div className="flex flex-col">
-                                                <span className="text-sm font-bold text-dark">{new Date(log.createdAt).toLocaleDateString()}</span>
+                                                <span className="text-sm font-bold text-dark">
+                                                  {log?.createdAt ? new Date(log.createdAt).toLocaleDateString() : 'N/A'}
+                                                </span>
                                                 <span className="text-[10px] text-light flex items-center">
                                                     <Clock size={10} className="mr-1" />
-                                                    {new Date(log.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                    {log?.createdAt ? new Date(log.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
                                                 </span>
                                             </div>
                                         </td>
                                         <td className="px-8 py-6">
                                             <div className="flex items-center space-x-3">
-                                                {getIcon(log.action)}
+                                                {getIcon(log?.action)}
                                                 <div>
-                                                    <p className="text-sm font-bold text-dark">{log.action}</p>
-                                                    <div className="flex items-center space-x-1 text-[9px] font-bold text-primary uppercase tracking-tighter">
-                                                        {getModuleIcon(log.module)}
-                                                        <span>{log.module}</span>
+                                                    <p className="text-sm font-bold text-dark">{log?.action || 'Unknown Action'}</p>
+                                                    <div className="flex items-center space-x-1 text-[9px] font-bold text-[#C4A882] uppercase tracking-tighter">
+                                                        {getModuleIcon(log?.module)}
+                                                        <span>{log?.module || 'System'}</span>
                                                     </div>
                                                 </div>
                                             </div>
                                         </td>
                                         <td className="px-8 py-6">
                                             <div className="flex items-center space-x-2">
-                                                <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold text-xs">
-                                                    {log.admin?.name?.charAt(0) || 'A'}
+                                                <div className="w-8 h-8 rounded-lg bg-[#C4A882]/10 text-[#C4A882] flex items-center justify-center font-bold text-xs">
+                                                    {log?.admin?.name?.charAt(0) || 'A'}
                                                 </div>
-                                                <span className="text-sm font-medium text-dark">{log.admin?.name || 'System'}</span>
+                                                <span className="text-sm font-medium text-dark">{log?.admin?.name || 'System'}</span>
                                             </div>
                                         </td>
                                         <td className="px-8 py-6">
                                             <div className="flex items-center space-x-4 opacity-60">
                                                 <div className="flex items-center space-x-1 text-[10px] font-medium text-light">
                                                     <Globe size={12} />
-                                                    <span>{log.ipAddress || 'Internal'}</span>
+                                                    <span>{log?.ipAddress || 'Internal'}</span>
                                                 </div>
                                                 <div className="flex items-center space-x-1 text-[10px] font-medium text-light">
                                                     <Smartphone size={12} />
-                                                    <span className="truncate max-w-[80px]">{log.userAgent?.split(' ')[0] || 'Browser'}</span>
+                                                    <span className="truncate max-w-[80px]">{log?.userAgent?.split(' ')[0] || 'Browser'}</span>
                                                 </div>
                                             </div>
                                         </td>
                                         <td className="px-8 py-6 text-right">
-                                            <button className="text-primary opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-primary/10 rounded-lg">
+                                            <button className="text-[#C4A882] opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-[#C4A882]/10 rounded-lg">
                                                 <ArrowUpRight size={18} />
                                             </button>
                                         </td>

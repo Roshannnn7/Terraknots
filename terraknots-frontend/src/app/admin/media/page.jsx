@@ -2,23 +2,18 @@
 
 import { useState, useEffect } from 'react';
 import { 
-    ImageIcon, 
+    Image as ImageIcon, 
     Search, 
     Trash2, 
     Copy, 
     ExternalLink, 
     Grid, 
     List as ListIcon,
-    Plus,
     Upload,
-    Check,
-    X,
-    Filter,
-    Clock,
-    FileText
+    Clock
 } from 'lucide-react';
-import api from '@/lib/api';
-import { toast } from 'react-toastify';
+import { safeGet, safeDelete } from '@/lib/apiClient';
+import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const MediaLibraryPage = () => {
@@ -31,10 +26,10 @@ const MediaLibraryPage = () => {
     const fetchImages = async () => {
         setLoading(true);
         try {
-            const { data } = await api.get('/upload/all');
-            setImages(data.images || []);
+            const data = await safeGet('/upload/all', { images: [] });
+            setImages(data?.images || data?.data || data || []);
         } catch (error) {
-            toast.error('Failed to load media library');
+            console.error('Failed to load media library', error);
         } finally {
             setLoading(false);
         }
@@ -46,27 +41,28 @@ const MediaLibraryPage = () => {
 
     const deleteImage = async (public_id) => {
         if (!window.confirm('Are you sure? This will permanently delete the image from Cloudinary.')) return;
-        try {
-            await api.delete('/upload/image', { data: { public_id } });
+        const result = await safeDelete('/upload/image', { data: { public_id } });
+        if (result.success) {
             toast.success('Image deleted');
-            setImages(images.filter(img => img.public_id !== public_id));
+            setImages(prev => prev.filter(img => img.public_id !== public_id));
             if (selectedImage?.public_id === public_id) setSelectedImage(null);
-        } catch (error) {
-            toast.error('Failed to delete image');
+        } else {
+            toast.error(result.error || 'Failed to delete image');
         }
     };
 
     const copyToClipboard = (text) => {
+        if (!text) return;
         navigator.clipboard.writeText(text);
-        toast.success('Link copied to clipboard!');
+        toast.success('Link copied to clipboard! 📋');
     };
 
-    const filteredImages = images.filter(img => 
-        img.public_id.toLowerCase().includes(searchTerm.toLowerCase())
+    const filteredImages = (images || []).filter(img => 
+        (img?.public_id || '').toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     const formatSize = (bytes) => {
-        if (bytes === 0) return '0 B';
+        if (!bytes || bytes === 0) return '0 B';
         const k = 1024;
         const sizes = ['B', 'KB', 'MB', 'GB'];
         const i = Math.floor(Math.log(bytes) / Math.log(k));
@@ -85,23 +81,23 @@ const MediaLibraryPage = () => {
                     <div className="flex bg-white rounded-2xl p-1 border border-gray-100 shadow-sm">
                         <button 
                             onClick={() => setViewMode('grid')}
-                            className={`p-2.5 rounded-xl transition-all ${viewMode === 'grid' ? 'bg-primary text-white shadow-md' : 'text-light hover:text-primary'}`}
+                            className={`p-2.5 rounded-xl transition-all ${viewMode === 'grid' ? 'bg-[#C4A882] text-white shadow-md' : 'text-light hover:text-[#C4A882]'}`}
                         >
                             <Grid size={18} />
                         </button>
                         <button 
                             onClick={() => setViewMode('list')}
-                            className={`p-2.5 rounded-xl transition-all ${viewMode === 'list' ? 'bg-primary text-white shadow-md' : 'text-light hover:text-primary'}`}
+                            className={`p-2.5 rounded-xl transition-all ${viewMode === 'list' ? 'bg-[#C4A882] text-white shadow-md' : 'text-light hover:text-[#C4A882]'}`}
                         >
                             <ListIcon size={18} />
                         </button>
                     </div>
                     <button 
                         onClick={fetchImages}
-                        className="btn-primary h-14 px-8 flex items-center space-x-3 shadow-xl shadow-primary/20"
+                        className="h-14 px-8 bg-[#C4A882] text-white rounded-2xl font-bold flex items-center space-x-3 shadow-xl shadow-[#C4A882]/20 hover:scale-[1.02] transition-all"
                     >
                         <Upload size={20} />
-                        <span>Upload New</span>
+                        <span>Refresh Assets</span>
                     </button>
                 </div>
             </div>
@@ -113,7 +109,7 @@ const MediaLibraryPage = () => {
                     <input 
                         type="text" 
                         placeholder="Search media by name..." 
-                        className="input-field h-12 pl-14"
+                        className="w-full bg-background border-none rounded-2xl pl-14 pr-6 h-12 font-medium text-dark focus:ring-2 focus:ring-[#C4A882]/20 transition-all outline-none"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
@@ -132,42 +128,42 @@ const MediaLibraryPage = () => {
                         ))
                     ) : (
                         <AnimatePresence>
-                            {filteredImages.map((img) => (
+                            {filteredImages.map((img, idx) => (
                                 <motion.div
-                                    key={img.public_id}
+                                    key={img?.public_id || idx}
                                     layout
                                     initial={{ opacity: 0, scale: 0.9 }}
                                     animate={{ opacity: 1, scale: 1 }}
                                     exit={{ opacity: 0, scale: 0.9 }}
                                     onClick={() => setSelectedImage(img)}
-                                    className={`group relative bg-white rounded-[2rem] border-2 cursor-pointer transition-all overflow-hidden ${selectedImage?.public_id === img.public_id ? 'border-primary shadow-xl ring-4 ring-primary/5' : 'border-transparent hover:border-primary/20 shadow-sm'}`}
+                                    className={`group relative bg-white rounded-[2rem] border-2 cursor-pointer transition-all overflow-hidden ${selectedImage?.public_id === img?.public_id ? 'border-[#C4A882] shadow-xl ring-4 ring-[#C4A882]/5' : 'border-transparent hover:border-[#C4A882]/20 shadow-sm'}`}
                                 >
                                     {viewMode === 'grid' ? (
                                         <>
                                             <div className="aspect-square relative overflow-hidden bg-background">
-                                                <img src={img.url} alt={img.public_id} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                                                <img src={img?.url || 'https://via.placeholder.com/300'} alt={img?.public_id} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
                                                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center space-x-2">
-                                                    <button onClick={(e) => { e.stopPropagation(); copyToClipboard(img.url); }} className="p-2 bg-white rounded-xl text-dark hover:bg-primary hover:text-white transition-all"><Copy size={16} /></button>
-                                                    <a href={img.url} target="_blank" onClick={(e) => e.stopPropagation()} className="p-2 bg-white rounded-xl text-dark hover:bg-primary hover:text-white transition-all"><ExternalLink size={16} /></a>
+                                                    <button onClick={(e) => { e.stopPropagation(); copyToClipboard(img?.url); }} className="p-2 bg-white rounded-xl text-dark hover:bg-[#C4A882] hover:text-white transition-all"><Copy size={16} /></button>
+                                                    <a href={img?.url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="p-2 bg-white rounded-xl text-dark hover:bg-[#C4A882] hover:text-white transition-all"><ExternalLink size={16} /></a>
                                                 </div>
                                             </div>
                                             <div className="p-3">
-                                                <p className="text-[10px] font-bold text-dark truncate">{img.public_id.split('/').pop()}</p>
-                                                <p className="text-[9px] text-light uppercase tracking-tighter">{formatSize(img.size)} • {img.format}</p>
+                                                <p className="text-[10px] font-bold text-dark truncate">{img?.public_id?.split('/').pop() || 'Untitled'}</p>
+                                                <p className="text-[9px] text-light uppercase tracking-tighter">{formatSize(img?.size)} • {img?.format || 'IMG'}</p>
                                             </div>
                                         </>
                                     ) : (
                                         <div className="flex items-center p-4 space-x-4">
                                             <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 bg-background">
-                                                <img src={img.url} alt="" className="w-full h-full object-cover" />
+                                                <img src={img?.url || 'https://via.placeholder.com/150'} alt="" className="w-full h-full object-cover" />
                                             </div>
                                             <div className="flex-1 min-w-0">
-                                                <p className="text-sm font-bold text-dark truncate">{img.public_id}</p>
-                                                <p className="text-[10px] text-light uppercase font-bold tracking-widest">{formatSize(img.size)}</p>
+                                                <p className="text-sm font-bold text-dark truncate">{img?.public_id || 'Untitled'}</p>
+                                                <p className="text-[10px] text-light uppercase font-bold tracking-widest">{formatSize(img?.size)}</p>
                                             </div>
                                             <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <button onClick={(e) => { e.stopPropagation(); copyToClipboard(img.url); }} className="p-2 bg-background rounded-xl text-light hover:text-primary transition-all"><Copy size={16} /></button>
-                                                <button onClick={(e) => { e.stopPropagation(); deleteImage(img.public_id); }} className="p-2 bg-background rounded-xl text-light hover:text-red-500 transition-all"><Trash2 size={16} /></button>
+                                                <button onClick={(e) => { e.stopPropagation(); copyToClipboard(img?.url); }} className="p-2 bg-background rounded-xl text-light hover:text-[#C4A882] transition-all"><Copy size={16} /></button>
+                                                <button onClick={(e) => { e.stopPropagation(); deleteImage(img?.public_id); }} className="p-2 bg-background rounded-xl text-light hover:text-red-500 transition-all"><Trash2 size={16} /></button>
                                             </div>
                                         </div>
                                     )}
@@ -189,28 +185,30 @@ const MediaLibraryPage = () => {
                                 <div className="space-y-4">
                                     <div>
                                         <h4 className="text-[10px] font-bold text-light uppercase tracking-widest mb-1">Public ID</h4>
-                                        <p className="text-sm font-bold text-dark break-all">{selectedImage.public_id}</p>
+                                        <p className="text-sm font-bold text-dark break-all">{selectedImage?.public_id || 'N/A'}</p>
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
                                             <h4 className="text-[10px] font-bold text-light uppercase tracking-widest mb-1">Format</h4>
-                                            <p className="text-sm font-bold text-dark uppercase">{selectedImage.format}</p>
+                                            <p className="text-sm font-bold text-dark uppercase">{selectedImage?.format || 'N/A'}</p>
                                         </div>
                                         <div>
                                             <h4 className="text-[10px] font-bold text-light uppercase tracking-widest mb-1">Size</h4>
-                                            <p className="text-sm font-bold text-dark">{formatSize(selectedImage.size)}</p>
+                                            <p className="text-sm font-bold text-dark">{formatSize(selectedImage?.size)}</p>
                                         </div>
                                     </div>
                                     <div>
                                         <h4 className="text-[10px] font-bold text-light uppercase tracking-widest mb-1">Created At</h4>
-                                        <p className="text-xs font-bold text-dark">{new Date(selectedImage.created_at).toLocaleString()}</p>
+                                        <p className="text-xs font-bold text-dark">
+                                          {selectedImage?.created_at ? new Date(selectedImage.created_at).toLocaleString() : 'N/A'}
+                                        </p>
                                     </div>
                                 </div>
 
                                 <div className="pt-6 space-y-3">
                                     <button 
                                         onClick={() => copyToClipboard(selectedImage.url)}
-                                        className="w-full h-12 rounded-2xl bg-primary/10 text-primary font-bold text-sm hover:bg-primary hover:text-white transition-all flex items-center justify-center space-x-2"
+                                        className="w-full h-12 rounded-2xl bg-[#C4A882]/10 text-[#C4A882] font-bold text-sm hover:bg-[#C4A882] hover:text-white transition-all flex items-center justify-center space-x-2"
                                     >
                                         <Copy size={16} />
                                         <span>Copy Link</span>

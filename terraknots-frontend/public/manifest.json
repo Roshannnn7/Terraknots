@@ -1,27 +1,15 @@
 {
   "name": "TerraKnots",
   "short_name": "TerraKnots",
-  "description": "Handmade with heart, knot by knot. Discover unique crochet, resin, clay and macrame creations.",
-  "start_url": "/",
-  "display": "standalone",
-  "background_color": "#F5F0EB",
   "theme_color": "#C4A882",
-  "orientation": "portrait-primary",
-  "icons": [],
-  "categories": ["shopping", "lifestyle"],
-  "screenshots": [],
-  "shortcuts": [
+  "background_color": "#F5F0EB",
+  "display": "standalone",
+  "start_url": "/",
+  "icons": [
     {
-      "name": "Shop",
-      "short_name": "Shop",
-      "description": "Browse our handmade collection",
-      "url": "/shop"
-    },
-    {
-      "name": "Cart",
-      "short_name": "Cart",
-      "description": "View your cart",
-      "url": "/cart"
+      "src": "/favicon.ico",
+      "sizes": "64x64",
+      "type": "image/x-icon"
     }
   ]
 }
