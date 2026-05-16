@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { ArrowRight, Home, Search } from 'lucide-react';
+import api from '@/lib/api';
 
 const floatVariants = {
     animate: (i) => ({
@@ -22,6 +23,23 @@ const CRAFT_ITEMS = ['🧶', '🧵', '🪡', '🌸', '🎀', '✨'];
 const NUMBERS = ['4', '0', '4'];
 
 export default function NotFound() {
+    const [categories, setCategories] = useState([]);
+
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const res = await api.get('/categories');
+                setCategories(res.data.data || []);
+            } catch (error) {
+                console.error('Failed to fetch 404 categories');
+            }
+        };
+        fetchCategories();
+    }, []);
+
+    const displayCats = categories.length > 0 
+        ? categories.slice(0, 5).map(c => c.name)
+        : ['Crochet', 'Resin', 'Clay', 'Keychains', 'Decor'];
     return (
         <div
             className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden"
@@ -177,10 +195,10 @@ export default function NotFound() {
                     transition={{ delay: 1.1, duration: 0.6 }}
                     className="mt-12 flex flex-wrap gap-3 justify-center"
                 >
-                    {['Crochet', 'Resin', 'Clay', 'Macrame', 'Bestsellers'].map((cat) => (
+                    {displayCats.map((cat) => (
                         <Link
                             key={cat}
-                            href={`/shop?category=${cat}`}
+                            href={`/shop?category=${cat.toLowerCase()}`}
                             className="text-sm font-semibold text-secondary hover:text-primary px-4 py-2 bg-white/60 rounded-full border border-primary/20 hover:border-primary/50 transition-all hover:-translate-y-0.5"
                         >
                             {cat}

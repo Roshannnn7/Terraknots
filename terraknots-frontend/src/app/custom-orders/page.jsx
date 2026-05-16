@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import AnnouncementBar from '@/components/layout/AnnouncementBar';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
@@ -11,16 +11,36 @@ import { motion } from 'framer-motion';
 import { PenTool, Upload, Send, Sparkles, MessageCircle } from 'lucide-react';
 
 const CustomOrderPage = () => {
+    const [categories, setCategories] = useState([]);
     const [formData, setFormData] = useState({
         name: '',
         email: '',
         phone: '',
-        productType: 'Crochet',
+        productType: '',
         description: '',
         budgetRange: CUSTOM_ORDER_BUDGETS[0],
         deadline: ''
     });
     const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const res = await api.get('/categories');
+                const cats = res.data.data || [];
+                setCategories(cats);
+                if (cats.length > 0) {
+                    setFormData(prev => ({ ...prev, productType: cats[0].name }));
+                } else {
+                    setFormData(prev => ({ ...prev, productType: 'Crochet' }));
+                }
+            } catch (error) {
+                console.error('Failed to fetch categories');
+                setFormData(prev => ({ ...prev, productType: 'Crochet' }));
+            }
+        };
+        fetchCategories();
+    }, []);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -32,7 +52,7 @@ const CustomOrderPage = () => {
                 name: '',
                 email: '',
                 phone: '',
-                productType: 'Crochet',
+                productType: categories[0]?.name || 'Crochet',
                 description: '',
                 budgetRange: CUSTOM_ORDER_BUDGETS[0],
                 deadline: ''
@@ -139,9 +159,9 @@ const CustomOrderPage = () => {
                                                 onChange={(e) => setFormData({ ...formData, productType: e.target.value })}
                                                 className="input-field appearance-none"
                                             >
-                                                <option>Crochet</option>
-                                                <option>Resin</option>
-                                                <option>Clay</option>
+                                                {categories.map(cat => (
+                                                    <option key={cat._id}>{cat.name}</option>
+                                                ))}
                                                 <option>Other</option>
                                             </select>
                                         </div>

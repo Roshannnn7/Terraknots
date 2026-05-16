@@ -6,16 +6,6 @@ import { staggerContainer, staggerItem } from '@/lib/animations';
 import api from '@/lib/api';
 import ProductCard from '@/components/common/ProductCard';
 
-const tabs = [
-    { label: 'All', value: '' },
-    { label: '🧶 Crochet', value: 'crochet' },
-    { label: '✨ Resin', value: 'resin' },
-    { label: '🏺 Clay', value: 'clay' },
-    { label: '🪴 Decor', value: 'decor' },
-    { label: '🔑 Keychains', value: 'keychains' },
-    { label: '🎌 Anime Collections', value: 'anime-collections' },
-];
-
 // Shimmer skeleton
 function ProductSkeleton() {
     return (
@@ -32,8 +22,29 @@ function ProductSkeleton() {
 
 export default function FeaturedProducts() {
     const [products, setProducts] = useState([]);
+    const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('');
+
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const res = await api.get('/categories');
+                setCategories(res.data.data || []);
+            } catch (error) {
+                console.error('Failed to fetch categories');
+            }
+        };
+        fetchCategories();
+    }, []);
+
+    const dynamicTabs = [
+        { label: 'All', value: '' },
+        ...categories.slice(0, 6).map(cat => ({
+            label: `${cat.icon || '📦'} ${cat.name}`,
+            value: cat.name.toLowerCase()
+        }))
+    ];
 
     useEffect(() => {
         const fetchFeatured = async () => {
@@ -83,7 +94,7 @@ export default function FeaturedProducts() {
                     transition={{ duration: 0.6, delay: 0.2 }}
                     className="flex flex-wrap justify-center gap-2 mb-12"
                 >
-                    {tabs.map((tab) => (
+                    {dynamicTabs.map((tab) => (
                         <button
                             key={tab.value}
                             onClick={() => setActiveTab(tab.value)}

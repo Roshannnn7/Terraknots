@@ -5,16 +5,10 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Instagram, Mail, Phone, Heart } from 'lucide-react';
 
-const footerLinks = {
-    shop: [
-        { label: 'All Products', href: '/shop' },
-        { label: 'Crochet', href: '/shop?category=crochet' },
-        { label: 'Resin Art', href: '/shop?category=resin' },
-        { label: 'Clay', href: '/shop?category=clay' },
-        { label: 'Decor', href: '/shop?category=decor' },
-        { label: 'New Arrivals', href: '/shop?sort=newest' },
-        { label: 'Bestsellers', href: '/shop?featured=true' },
-    ],
+import { useState, useEffect } from 'react';
+import api from '@/lib/api';
+
+const DEFAULT_LINKS = {
     help: [
         { label: 'Contact Us', href: '/contact' },
         { label: 'FAQ', href: '/faq' },
@@ -40,6 +34,29 @@ const colVariants = {
 };
 
 export default function Footer() {
+    const [categories, setCategories] = useState([]);
+
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const res = await api.get('/categories');
+                setCategories(res.data.data || []);
+            } catch (error) {
+                console.error('Failed to fetch footer categories');
+            }
+        };
+        fetchCategories();
+    }, []);
+
+    const shopLinks = [
+        { label: 'All Products', href: '/shop' },
+        ...categories.slice(0, 5).map(cat => ({
+            label: cat.name,
+            href: `/shop?category=${cat.name.toLowerCase()}`
+        })),
+        { label: 'New Arrivals', href: '/shop?sort=newest' },
+        { label: 'Bestsellers', href: '/shop?featured=true' },
+    ];
     return (
         <footer className="relative overflow-hidden" style={{ backgroundColor: '#2C1A10' }}>
             {/* Workspace texture overlay — using CSS noise instead of workspace image */}
@@ -154,7 +171,7 @@ export default function Footer() {
                             Shop
                         </h4>
                         <ul className="space-y-3">
-                            {footerLinks.shop.map((link) => (
+                            {shopLinks.map((link) => (
                                 <li key={link.label}>
                                     <Link
                                         href={link.href}
@@ -176,7 +193,7 @@ export default function Footer() {
                             Help
                         </h4>
                         <ul className="space-y-3">
-                            {footerLinks.help.map((link) => (
+                            {DEFAULT_LINKS.help.map((link) => (
                                 <li key={link.label}>
                                     <Link
                                         href={link.href}
@@ -198,7 +215,7 @@ export default function Footer() {
                             Connect
                         </h4>
                         <ul className="space-y-3 mb-6">
-                            {footerLinks.connect.map((link) => (
+                            {DEFAULT_LINKS.connect.map((link) => (
                                 <li key={link.label}>
                                     <Link href={link.href} className="text-sm text-white/50 hover:text-white transition-colors group flex items-center">
                                         <span className="group-hover:translate-x-1 transition-transform duration-200">{link.label}</span>

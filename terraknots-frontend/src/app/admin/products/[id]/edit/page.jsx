@@ -56,7 +56,7 @@ export default function EditProductPage() {
       const token = getToken();
       
       try {
-        // Fetch product via new admin ID endpoint
+        // Fetch product
         const productRes = await axios.get(
           `${API_URL}/products/admin/${productId}`,
           { 
@@ -261,24 +261,24 @@ export default function EditProductPage() {
 
   if (loading) {
     return (
-      <div className="p-8 text-center min-h-screen bg-[#FAF8F5] flex flex-col items-center justify-center">
-        <div className="text-6xl mb-4 animate-bounce">🧶</div>
-        <p className="text-gray-500 font-medium">Unraveling product details...</p>
+      <div className="p-8 text-center">
+        <div className="text-6xl mb-4">🧶</div>
+        <p className="text-gray-500">Loading product...</p>
       </div>
     );
   }
 
   if (notFound) {
     return (
-      <div className="p-8 text-center min-h-screen bg-[#FAF8F5] flex flex-col items-center justify-center">
+      <div className="p-8 text-center">
         <div className="text-6xl mb-4">⚠️</div>
-        <h2 className="text-3xl font-serif mb-3 text-dark">Treasure not found</h2>
-        <p className="text-gray-500 mb-6">This product doesn't exist or has been removed from the loom.</p>
+        <h2 className="text-3xl font-serif mb-3">Treasure not found</h2>
+        <p className="text-gray-500 mb-6">This product doesn't exist or has been removed.</p>
         <button 
           onClick={() => router.push('/admin/products')}
-          className="px-8 py-3 bg-[#C4A882] text-white rounded-full font-bold shadow-lg hover:shadow-xl transition-all"
+          className="px-6 py-3 bg-[#C4A882] text-white rounded-full"
         >
-          Back to Inventory
+          Go back
         </button>
       </div>
     );
@@ -290,52 +290,47 @@ export default function EditProductPage() {
   const safeCategories = categories || [];
 
   return (
-    <div className="p-6 max-w-7xl mx-auto pb-20">
-      <div className="flex justify-between items-start mb-8">
+    <div className="p-6 max-w-7xl mx-auto">
+      <div className="flex justify-between items-start mb-6">
         <div>
-          <button onClick={() => router.back()} className="text-sm font-bold text-[#8B7355] mb-2 hover:underline flex items-center gap-1">
+          <button onClick={() => router.back()} className="text-sm text-[#8B7355] mb-2">
             ← Back to Products
           </button>
-          <h1 className="text-4xl font-serif text-[#2C2C2C] font-bold">Edit Product</h1>
-          <p className="text-light italic text-sm mt-1">ID: {productId}</p>
+          <h1 className="text-3xl font-serif text-[#2C2C2C]">Edit Product</h1>
         </div>
         <button
           type="button"
           onClick={handleDelete}
-          className="px-5 py-2.5 bg-red-50 text-red-600 rounded-xl hover:bg-red-500 hover:text-white transition-all font-bold border border-red-100 flex items-center gap-2"
+          className="px-4 py-2 border border-red-300 text-red-600 rounded-xl hover:bg-red-50"
         >
-          <span>🗑️</span> Delete Product
+          🗑️ Delete
         </button>
       </div>
 
-      <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* LEFT COLUMN */}
-        <div className="lg:col-span-2 space-y-8">
-          {/* Basics */}
-          <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100">
-            <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
-              <span className="w-8 h-8 bg-[#C4A882]/10 text-[#C4A882] rounded-lg flex items-center justify-center">📝</span>
-              Product Basics
-            </h2>
-            <div className="space-y-6">
+      <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* LEFT */}
+        <div className="lg:col-span-2 space-y-6">
+          <div className="bg-white p-6 rounded-2xl shadow-sm">
+            <h2 className="text-lg font-semibold mb-4">Basics</h2>
+            <div className="space-y-4">
               <div>
-                <label className="block text-[10px] font-bold text-[#8B7355] uppercase tracking-widest mb-2">Product Name *</label>
+                <label className="block text-xs font-semibold text-[#8B7355] uppercase mb-1">Name *</label>
                 <input
                   type="text"
                   value={formData?.name || ''}
                   onChange={(e) => setFormData({...formData, name: e.target.value})}
-                  className="w-full px-6 py-4 bg-background border-none rounded-2xl focus:ring-2 focus:ring-[#C4A882]/20 font-medium text-dark"
+                  className="w-full px-4 py-2 border rounded-xl"
                   required
                 />
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] font-bold text-[#8B7355] uppercase tracking-widest mb-2">Category *</label>
+                  <label className="block text-xs font-semibold text-[#8B7355] uppercase mb-1">Category *</label>
                   <select
                     value={formData?.category || ''}
                     onChange={(e) => setFormData({...formData, category: e.target.value})}
-                    className="w-full px-6 py-4 bg-background border-none rounded-2xl focus:ring-2 focus:ring-[#C4A882]/20 font-bold text-dark appearance-none"
+                    className="w-full px-4 py-2 border rounded-xl"
                     required
                   >
                     <option value="">Select Category</option>
@@ -348,96 +343,150 @@ export default function EditProductPage() {
                 </div>
                 
                 <div>
-                  <label className="block text-[10px] font-bold text-[#8B7355] uppercase tracking-widest mb-2">Available Stock</label>
+                  <label className="block text-xs font-semibold text-[#8B7355] uppercase mb-1">Stock</label>
                   <input
                     type="number"
                     min="0"
                     value={formData?.stock ?? 0}
                     onChange={(e) => setFormData({...formData, stock: e.target.value})}
-                    className="w-full px-6 py-4 bg-background border-none rounded-2xl focus:ring-2 focus:ring-[#C4A882]/20 font-medium text-dark"
+                    className="w-full px-4 py-2 border rounded-xl"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-[#8B7355] uppercase tracking-widest mb-2">Short Hook (Snippet)</label>
+                <label className="block text-xs font-semibold text-[#8B7355] uppercase mb-1">Short Description</label>
                 <textarea
                   value={formData?.shortDescription || ''}
                   onChange={(e) => setFormData({...formData, shortDescription: e.target.value})}
                   rows="2"
-                  className="w-full px-6 py-4 bg-background border-none rounded-2xl focus:ring-2 focus:ring-[#C4A882]/20 font-medium text-dark resize-none"
+                  className="w-full px-4 py-2 border rounded-xl"
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-[#8B7355] uppercase tracking-widest mb-2">Full Story (Description)</label>
+                <label className="block text-xs font-semibold text-[#8B7355] uppercase mb-1">Full Description</label>
                 <textarea
                   value={formData?.fullDescription || ''}
                   onChange={(e) => setFormData({...formData, fullDescription: e.target.value})}
-                  rows="6"
-                  className="w-full px-6 py-4 bg-background border-none rounded-2xl focus:ring-2 focus:ring-[#C4A882]/20 font-medium text-dark resize-none"
+                  rows="5"
+                  className="w-full px-4 py-2 border rounded-xl"
                 />
               </div>
             </div>
           </div>
 
-          {/* Details */}
-          <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100">
-            <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
-              <span className="w-8 h-8 bg-accent/10 text-accent rounded-lg flex items-center justify-center">✨</span>
-              Craft Details
-            </h2>
-            <div className="space-y-6">
+          <div className="bg-white p-6 rounded-2xl shadow-sm">
+            <h2 className="text-lg font-semibold mb-4">Pricing & Visibility</h2>
+            <div className="grid grid-cols-2 gap-4 mb-4">
               <div>
-                <label className="block text-[10px] font-bold text-[#8B7355] uppercase tracking-widest mb-2">Physical Dimensions</label>
+                <label className="block text-xs font-semibold text-[#8B7355] uppercase mb-1">Price (₹) *</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={formData?.price || ''}
+                  onChange={(e) => setFormData({...formData, price: e.target.value})}
+                  className="w-full px-4 py-2 border rounded-xl"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-[#8B7355] uppercase mb-1">Sale Price (₹)</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={formData?.salePrice || ''}
+                  onChange={(e) => setFormData({...formData, salePrice: e.target.value})}
+                  className="w-full px-4 py-2 border rounded-xl"
+                />
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <label className="flex items-center gap-2">
+                <input type="checkbox" checked={!!formData?.isFeatured} onChange={(e) => setFormData({...formData, isFeatured: e.target.checked})} />
+                <span className="text-sm">⭐ Show in Featured</span>
+              </label>
+              <label className="flex items-center gap-2">
+                <input type="checkbox" checked={!!formData?.isBestseller} onChange={(e) => setFormData({...formData, isBestseller: e.target.checked})} />
+                <span className="text-sm">🏆 Bestseller Badge</span>
+              </label>
+              <label className="flex items-center gap-2">
+                <input type="checkbox" checked={!!formData?.isNewArrival} onChange={(e) => setFormData({...formData, isNewArrival: e.target.checked})} />
+                <span className="text-sm">✨ New Arrival Badge</span>
+              </label>
+              <label className="flex items-center gap-2">
+                <input type="checkbox" checked={formData?.isActive !== false} onChange={(e) => setFormData({...formData, isActive: e.target.checked})} />
+                <span className="text-sm">👁️ Active (visible)</span>
+              </label>
+            </div>
+          </div>
+
+          <div className="bg-white p-6 rounded-2xl shadow-sm">
+            <h2 className="text-lg font-semibold mb-4">Details</h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-[#8B7355] uppercase mb-1">Dimensions</label>
                 <input
                   type="text"
                   value={formData?.dimensions || ''}
                   onChange={(e) => setFormData({...formData, dimensions: e.target.value})}
                   placeholder="e.g. 5x5x2 inches"
-                  className="w-full px-6 py-4 bg-background border-none rounded-2xl focus:ring-2 focus:ring-[#C4A882]/20 font-medium text-dark"
+                  className="w-full px-4 py-2 border rounded-xl"
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-[#8B7355] uppercase tracking-widest mb-2">Materials Used</label>
-                <div className="flex gap-2 mb-3">
+                <label className="block text-xs font-semibold text-[#8B7355] uppercase mb-1">Care Instructions</label>
+                <textarea
+                  value={formData?.careInstructions || ''}
+                  onChange={(e) => setFormData({...formData, careInstructions: e.target.value})}
+                  rows="3"
+                  className="w-full px-4 py-2 border rounded-xl"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-[#8B7355] uppercase mb-1">Materials</label>
+                <div className="flex gap-2 mb-2">
                   <input
                     type="text"
                     value={materialInput}
                     onChange={(e) => setMaterialInput(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addMaterial(); } }}
-                    placeholder="e.g. Organic Cotton"
-                    className="flex-1 px-6 py-4 bg-background border-none rounded-2xl focus:ring-2 focus:ring-[#C4A882]/20 font-medium text-dark"
+                    placeholder="e.g. Yarn"
+                    className="flex-1 px-4 py-2 border rounded-xl"
                   />
-                  <button type="button" onClick={addMaterial} className="px-6 py-4 bg-[#C4A882] text-white rounded-2xl font-bold">Add</button>
+                  <button type="button" onClick={addMaterial} className="px-4 py-2 bg-[#C4A882] text-white rounded-xl">Add</button>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {safeMaterials.map((m, i) => (
-                    <span key={`${m}-${i}`} className="px-4 py-2 bg-[#F2D7C9]/40 text-[#8B7355] rounded-xl text-xs font-bold flex items-center gap-2 border border-[#F2D7C9]">
-                      {m} <button type="button" onClick={() => removeMaterial(m)} className="hover:text-red-500">×</button>
+                    <span key={`${m}-${i}`} className="px-3 py-1 bg-[#F2D7C9] text-[#8B7355] rounded-full text-sm">
+                      {m} <button type="button" onClick={() => removeMaterial(m)}>×</button>
                     </span>
                   ))}
                 </div>
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-[#8B7355] uppercase tracking-widest mb-2">Search Tags</label>
-                <div className="flex gap-2 mb-3">
+                <label className="block text-xs font-semibold text-[#8B7355] uppercase mb-1">Tags</label>
+                <div className="flex gap-2 mb-2">
                   <input
                     type="text"
                     value={tagInput}
                     onChange={(e) => setTagInput(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addTag(); } }}
-                    placeholder="e.g. gift-idea"
-                    className="flex-1 px-6 py-4 bg-background border-none rounded-2xl focus:ring-2 focus:ring-[#C4A882]/20 font-medium text-dark"
+                    placeholder="e.g. cute"
+                    className="flex-1 px-4 py-2 border rounded-xl"
                   />
-                  <button type="button" onClick={addTag} className="px-6 py-4 bg-[#C4A882] text-white rounded-2xl font-bold">Add</button>
+                  <button type="button" onClick={addTag} className="px-4 py-2 bg-[#C4A882] text-white rounded-xl">Add</button>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {safeTags.map((t, i) => (
-                    <span key={`${t}-${i}`} className="px-4 py-2 bg-accent/10 text-accent rounded-xl text-xs font-bold flex items-center gap-2 border border-accent/20">
-                      #{t} <button type="button" onClick={() => removeTag(t)} className="hover:text-red-500">×</button>
+                    <span key={`${t}-${i}`} className="px-3 py-1 bg-[#A8B5A2]/30 rounded-full text-sm">
+                      #{t} <button type="button" onClick={() => removeTag(t)}>×</button>
                     </span>
                   ))}
                 </div>
@@ -446,16 +495,12 @@ export default function EditProductPage() {
           </div>
         </div>
 
-        {/* RIGHT COLUMN */}
-        <div className="space-y-8">
-          {/* Images */}
-          <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100">
-            <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
-              <span className="w-8 h-8 bg-secondary/10 text-secondary rounded-lg flex items-center justify-center">🖼️</span>
-              Gallery ({safeImages.length}/15)
-            </h2>
+        {/* RIGHT */}
+        <div className="space-y-6">
+          <div className="bg-white p-6 rounded-2xl shadow-sm">
+            <h2 className="text-lg font-semibold mb-4">Images ({safeImages.length}/15)</h2>
             
-            <label className="block border-2 border-dashed border-gray-100 rounded-2xl p-8 text-center cursor-pointer hover:border-[#C4A882] hover:bg-[#FBF9F7] transition-all group">
+            <label className="block border-2 border-dashed border-gray-300 rounded-2xl p-6 text-center cursor-pointer hover:border-[#C4A882]">
               <input
                 type="file"
                 multiple
@@ -464,111 +509,49 @@ export default function EditProductPage() {
                 className="hidden"
                 disabled={uploading || safeImages.length >= 15}
               />
-              <div className="w-12 h-12 bg-[#FBF9F7] text-[#C4A882] rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
-                <span className="text-2xl">{uploading ? '⌛' : '➕'}</span>
-              </div>
-              <p className="font-bold text-dark">{uploading ? 'Processing...' : 'Add Visuals'}</p>
-              <p className="text-[10px] text-light uppercase tracking-widest mt-1">Square images work best</p>
+              <p className="font-semibold">{uploading ? 'Uploading...' : 'Add more images'}</p>
+              <p className="text-xs text-gray-500 mt-1">JPG, PNG, WEBP (max 10MB)</p>
             </label>
 
-            <div className="grid grid-cols-2 gap-3 mt-6">
-              {safeImages.map((img, idx) => (
-                <div key={`img-${idx}`} className="relative group aspect-square rounded-2xl overflow-hidden shadow-sm border border-gray-100">
-                  <img src={img} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                  {idx === 0 && (
-                    <div className="absolute top-2 left-2 bg-[#C4A882] text-white text-[9px] font-bold px-2 py-1 rounded-lg uppercase tracking-widest shadow-lg">
-                      Main Focus
+            <div className="grid grid-cols-2 gap-2 mt-4">
+              {safeImages.map((img, i) => (
+                <div key={`img-${i}`} className="relative group">
+                  <img src={img} alt={`${i}`} className="w-full h-24 object-cover rounded-xl" />
+                  {i === 0 && (
+                    <div className="absolute top-1 left-1 bg-[#C4A882] text-white text-[10px] px-2 py-0.5 rounded-full">
+                      ⭐ Main
                     </div>
                   )}
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => removeImage(i)}
+                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 opacity-0 group-hover:opacity-100"
+                  >
+                    ×
+                  </button>
+                  {i > 0 && (
                     <button
                       type="button"
-                      onClick={() => removeImage(idx)}
-                      className="p-2 bg-white text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all shadow-lg"
+                      onClick={() => setMainImage(i)}
+                      className="absolute bottom-1 left-1 bg-white text-[10px] px-2 py-0.5 rounded-full opacity-0 group-hover:opacity-100"
                     >
-                      🗑️
+                      Set Main
                     </button>
-                    {idx > 0 && (
-                      <button
-                        type="button"
-                        onClick={() => setMainImage(idx)}
-                        className="px-3 py-2 bg-white text-dark rounded-xl hover:bg-[#C4A882] hover:text-white transition-all font-bold text-[10px] shadow-lg"
-                      >
-                        Set Main
-                      </button>
-                    )}
-                  </div>
+                  )}
                 </div>
               ))}
-            </div>
-          </div>
-
-          {/* Pricing & Badges */}
-          <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100">
-            <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
-              <span className="w-8 h-8 bg-terracotta/10 text-terracotta rounded-lg flex items-center justify-center">💰</span>
-              Economics
-            </h2>
-            <div className="space-y-6">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-[10px] font-bold text-[#8B7355] uppercase tracking-widest mb-2">Base Price (₹)</label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={formData?.price || ''}
-                    onChange={(e) => setFormData({...formData, price: e.target.value})}
-                    className="w-full px-6 py-4 bg-background border-none rounded-2xl focus:ring-2 focus:ring-[#C4A882]/20 font-bold text-dark"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-[#8B7355] uppercase tracking-widest mb-2">Sale Price (₹)</label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={formData?.salePrice || ''}
-                    onChange={(e) => setFormData({...formData, salePrice: e.target.value})}
-                    className="w-full px-6 py-4 bg-background border-none rounded-2xl focus:ring-2 focus:ring-[#C4A882]/20 font-bold text-dark"
-                  />
-                </div>
-              </div>
-              
-              <div className="space-y-3 pt-4 border-t border-gray-50">
-                <BadgeToggle label="⭐ Feature on Homepage" checked={!!formData?.isFeatured} onChange={(v) => setFormData({...formData, isFeatured: v})} />
-                <BadgeToggle label="🏆 Bestseller Highlight" checked={!!formData?.isBestseller} onChange={(v) => setFormData({...formData, isBestseller: v})} />
-                <BadgeToggle label="✨ New Arrival Spark" checked={!!formData?.isNewArrival} onChange={(v) => setFormData({...formData, isNewArrival: v})} />
-                <BadgeToggle label="👁️ Visible in Shop" checked={formData?.isActive !== false} onChange={(v) => setFormData({...formData, isActive: v})} />
-              </div>
             </div>
           </div>
 
           <button
             type="submit"
             disabled={saving}
-            className="w-full py-6 bg-dark text-white rounded-[2rem] font-bold text-lg shadow-xl shadow-dark/10 hover:shadow-2xl hover:-translate-y-1 transition-all disabled:opacity-50 flex items-center justify-center gap-3"
+            className="w-full py-4 bg-[#C4A882] text-white rounded-2xl font-semibold disabled:opacity-50"
           >
-            {saving ? '⌛ Weaving Changes...' : '💾 Save Product Changes'}
+            {saving ? 'Saving Changes...' : '💾 Save Changes'}
           </button>
         </div>
       </form>
     </div>
-  );
-}
-
-function BadgeToggle({ label, checked, onChange }) {
-  return (
-    <button
-      type="button"
-      onClick={() => onChange(!checked)}
-      className={`w-full flex items-center justify-between p-4 rounded-2xl transition-all border-2 ${checked ? 'bg-[#C4A882]/5 border-[#C4A882]/20 text-dark' : 'bg-background border-transparent text-light opacity-60'}`}
-    >
-      <span className="text-xs font-bold uppercase tracking-wider">{label}</span>
-      <div className={`w-10 h-6 rounded-full relative transition-colors ${checked ? 'bg-[#C4A882]' : 'bg-gray-300'}`}>
-        <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${checked ? 'left-5' : 'left-1'}`} />
-      </div>
-    </button>
   );
 }

@@ -90,16 +90,18 @@ export default function AdminDashboard() {
           try {
               setLoading(true);
               const data = await safeGet('/admin/dashboard/stats', {
-                todayRevenue: 0,
-                totalOrders: 0,
-                totalProducts: 0,
-                totalCustomers: 0,
-                pendingOrders: 0,
-                dailyRevenue: [],
-                ordersByCategory: [],
-                lowStockProducts: []
+                stats: {
+                  todayRevenue: 0,
+                  totalOrders: 0,
+                  totalProducts: 0,
+                  totalCustomers: 0,
+                  pendingOrders: 0,
+                  dailyRevenue: [],
+                  ordersByCategory: [],
+                  lowStockProducts: []
+                }
               });
-              setStats(data);
+              setStats(data.stats || data);
           } catch (err) {
               console.error('Error fetching stats', err);
               setError('Failed to load dashboard statistics');
@@ -201,10 +203,7 @@ export default function AdminDashboard() {
               <PieChart>
                 <Pie
                   data={(stats?.ordersByCategory?.length > 0) ? stats.ordersByCategory : [
-                      { name: 'Crochet', value: 40 },
-                      { name: 'Resin', value: 30 },
-                      { name: 'Clay', value: 20 },
-                      { name: 'Others', value: 10 },
+                      { name: 'No Sales Yet', value: 100 }
                   ]}
                   innerRadius={60}
                   outerRadius={100}

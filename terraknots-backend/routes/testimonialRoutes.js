@@ -4,6 +4,10 @@ const Testimonial = require('../models/Testimonial');
 const { protect } = require('../middleware/auth');
 const { admin } = require('../middleware/admin');
 
+if (!protect || !admin) {
+  console.error('CRITICAL: Testimonial routes failed to load middleware!');
+}
+
 // GET /api/testimonials — public, active only
 router.get('/', async (req, res) => {
   try {
