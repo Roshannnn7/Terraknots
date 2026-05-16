@@ -41,7 +41,8 @@ exports.getAllCoupons = async (req, res, next) => {
 
 exports.validateCoupon = async (req, res, next) => {
     try {
-        const { code, orderAmount } = req.body;
+        const { code, orderAmount, cartTotal } = req.body;
+        const amount = orderAmount || cartTotal;
 
         const coupon = await Coupon.findOne({ code: code.toUpperCase() });
 
@@ -52,12 +53,12 @@ exports.validateCoupon = async (req, res, next) => {
             });
         }
 
-        if (!coupon.isValid(orderAmount)) {
+        if (!coupon.isValid(amount)) {
             let message = 'Coupon is not valid';
             if (!coupon.isActive) message = 'Coupon is inactive';
             else if (coupon.expiryDate < new Date()) message = 'Coupon has expired';
             else if (coupon.maxUses && coupon.usedCount >= coupon.maxUses) message = 'Coupon usage limit reached';
-            else if (orderAmount < coupon.minOrderAmount) message = `Minimum order amount of ₹${coupon.minOrderAmount} required`;
+            else if (amount < coupon.minOrderAmount) message = `Minimum order amount of ₹${coupon.minOrderAmount} required`;
 
             return res.status(400).json({
                 success: false,
@@ -65,7 +66,7 @@ exports.validateCoupon = async (req, res, next) => {
             });
         }
 
-        const discount = coupon.calculateDiscount(orderAmount);
+        const discount = coupon.calculateDiscount(amount);
 
         res.status(200).json({
             success: true,

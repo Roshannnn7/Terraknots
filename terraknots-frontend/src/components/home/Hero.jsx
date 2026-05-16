@@ -64,6 +64,24 @@ export default function Hero() {
     const textY = useTransform(scrollYProgress, [0, 1], [0, -40]);
     const opacity = useTransform(scrollYProgress, [0, 0.7], [1, 0]);
 
+    const [settings, setSettings] = useState(null);
+
+    useEffect(() => {
+        const fetchSettings = async () => {
+            try {
+                const { data } = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/settings`).then(res => res.json());
+                setSettings(data?.settings || data);
+            } catch (error) {
+                console.error('Failed to load hero settings');
+            }
+        };
+        fetchSettings();
+    }, []);
+
+    const heading = settings?.heroHeading || settings?.heroSection?.heading || "Handmade with heart, knot by knot";
+    const subtext = settings?.heroSubtext || settings?.heroSection?.subtext || "Discover unique crochet, resin & clay creations — each piece crafted by hand with love and patience.";
+    const heroImage = settings?.heroImage || settings?.heroSection?.image || "/images/workspace-paint.jpg";
+
     return (
         <section
             ref={containerRef}
@@ -120,36 +138,12 @@ export default function Hero() {
 
                         {/* Main Heading */}
                         <div className="space-y-2">
-                            {/* Line 1 */}
-                            <div className="flex flex-wrap gap-x-4 justify-center lg:justify-start" style={{ perspective: '800px' }}>
-                                {headingWords.map((word, i) => (
-                                    <motion.span
-                                        key={word}
-                                        initial={{ opacity: 0, y: 50, rotateX: 40 }}
-                                        animate={{ opacity: 1, y: 0, rotateX: 0 }}
-                                        transition={{ delay: 0.3 + i * 0.12, duration: 0.7, ease: [0.25, 0.46, 0.45, 0.94] }}
-                                        className="block text-4xl sm:text-5xl md:text-6xl xl:text-7xl font-heading font-bold leading-[1.05]"
-                                        style={{ color: word === 'heart,' ? '#D4A574' : '#2C2C2C' }}
-                                    >
-                                        {word}
-                                    </motion.span>
-                                ))}
-                            </div>
-                            {/* Line 2 */}
-                            <div className="flex flex-wrap gap-x-3 justify-center lg:justify-start" style={{ perspective: '800px' }}>
-                                {headingWords2.map((word, i) => (
-                                    <motion.span
-                                        key={word}
-                                        initial={{ opacity: 0, y: 50, rotateX: 40 }}
-                                        animate={{ opacity: 1, y: 0, rotateX: 0 }}
-                                        transition={{ delay: 0.65 + i * 0.12, duration: 0.7, ease: [0.25, 0.46, 0.45, 0.94] }}
-                                        className="block font-accent italic text-3xl sm:text-4xl md:text-5xl xl:text-6xl leading-tight"
-                                        style={{ color: '#C4A882' }}
-                                    >
-                                        {word}
-                                    </motion.span>
-                                ))}
-                            </div>
+                            <h1 
+                                className="text-4xl sm:text-5xl md:text-6xl xl:text-7xl font-heading font-bold leading-[1.05] text-dark"
+                                style={{ perspective: '800px' }}
+                            >
+                                {heading}
+                            </h1>
                         </div>
 
                         {/* Subtext */}
@@ -159,7 +153,7 @@ export default function Hero() {
                             transition={{ delay: 1.1, duration: 0.6 }}
                             className="text-base md:text-lg text-light leading-relaxed max-w-lg mx-auto lg:mx-0"
                         >
-                            Discover unique crochet, resin & clay creations — each piece crafted by hand with love and patience.
+                            {subtext}
                             <span className="font-semibold text-secondary"> No two pieces alike.</span>
                         </motion.p>
 
@@ -243,7 +237,7 @@ export default function Hero() {
                                 className="relative aspect-[4/5] organic-mask overflow-hidden shadow-warm"
                             >
                                 <Image
-                                    src="/images/workspace-paint.jpg"
+                                    src={heroImage}
                                     alt="TerraKnots handmade workspace"
                                     fill
                                     priority

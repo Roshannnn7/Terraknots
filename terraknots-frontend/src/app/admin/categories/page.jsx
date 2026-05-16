@@ -255,6 +255,9 @@ export default function CategoriesAdminPage() {
         <div>
           <h1 className="text-4xl font-serif text-[#2C2C2C]">Categories</h1>
           <p className="text-gray-500 italic">Organize your handmade treasures</p>
+          <div className="mt-2 text-[10px] font-bold text-accent uppercase tracking-widest bg-accent/10 px-3 py-1 rounded-full inline-block">
+            Tip: The first 6 active categories will be featured on your homepage.
+          </div>
         </div>
         <button
           onClick={openAddForm}
@@ -419,6 +422,21 @@ export default function CategoriesAdminPage() {
                   </label>
                 )}
                 
+                <div className="mt-4">
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={formData.image || ''}
+                      onChange={(e) => setFormData({ ...formData, image: e.target.value })}
+                      placeholder="Or paste an image URL here..."
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#C4A882]"
+                    />
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-gray-400 uppercase tracking-widest pointer-events-none">
+                      URL
+                    </div>
+                  </div>
+                </div>
+
                 <input
                   ref={fileInputRef}
                   type="file"

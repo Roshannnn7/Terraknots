@@ -58,6 +58,7 @@ export default function SettingsPage() {
     showDarkMode: false,
     heroHeading: 'Handmade with heart, knot by knot',
     heroSubtext: 'Discover unique creations',
+    heroImage: '',
     upiId: 'yourname@upi',
     upiEnabled: true,
     codEnabled: true,
@@ -218,12 +219,84 @@ function AppearanceTab({ settings, updateField }) {
 
 // HOMEPAGE TAB
 function HomepageTab({ settings, updateField }) {
+  const [uploading, setUploading] = useState(false);
+
+  const handleUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    const toastId = toast.loading('Uploading hero banner...');
+
+    try {
+      const token = localStorage.getItem('adminToken') || localStorage.getItem('token');
+      const fd = new FormData();
+      fd.append('image', file);
+      fd.append('folder', 'terraknots/homepage');
+
+      const res = await axios.post(`${API_URL}/upload/image`, fd, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      const url = res.data.url || res.data.data?.url;
+      if (url) {
+        updateField('heroImage', url);
+        toast.success('Hero banner uploaded! ✨', { id: toastId });
+      } else {
+        toast.error('Upload failed', { id: toastId });
+      }
+    } catch (err) {
+      toast.error('Upload failed', { id: toastId });
+    } finally {
+      setUploading(false);
+    }
+  };
+
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
       <h2 className="text-2xl font-serif mb-6 text-[#2C2C2C]">🏠 Homepage</h2>
-      <div className="space-y-4">
-        <Field label="Hero Heading" value={settings?.heroHeading} onChange={v => updateField('heroHeading', v)} />
-        <Field label="Hero Subtext" value={settings?.heroSubtext} onChange={v => updateField('heroSubtext', v)} type="textarea" />
+      
+      <div className="space-y-6">
+        <div>
+          <label className="block text-xs font-bold text-[#8B7355] uppercase tracking-widest mb-2">Hero Banner Image</label>
+          {settings?.heroImage ? (
+            <div className="relative group rounded-2xl overflow-hidden aspect-[21/9] border border-gray-100 shadow-sm mb-3">
+              <img src={settings.heroImage} alt="Hero Banner" className="w-full h-full object-cover" />
+              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center gap-3">
+                <label className="p-3 bg-white text-dark rounded-full cursor-pointer hover:scale-110 transition-transform">
+                  <input type="file" className="hidden" onChange={handleUpload} accept="image/*" />
+                  ✏️
+                </label>
+                <button 
+                  onClick={() => updateField('heroImage', '')}
+                  className="p-3 bg-red-500 text-white rounded-full hover:scale-110 transition-transform"
+                >
+                  🗑️
+                </button>
+              </div>
+            </div>
+          ) : (
+            <label className="block border-2 border-dashed border-gray-200 rounded-2xl p-8 text-center cursor-pointer hover:border-[#C4A882] hover:bg-[#F5F0EB]/30 transition-all mb-3">
+              <input type="file" className="hidden" onChange={handleUpload} accept="image/*" />
+              <div className="text-3xl mb-2">🖼️</div>
+              <p className="text-sm font-bold text-dark">{uploading ? 'Uploading...' : 'Click to upload hero banner'}</p>
+              <p className="text-[10px] text-light mt-1">Recommended: 1920x800px</p>
+            </label>
+          )}
+          <Field 
+            value={settings?.heroImage} 
+            onChange={v => updateField('heroImage', v)} 
+            placeholder="Or paste image URL here..." 
+          />
+        </div>
+
+        <div className="grid grid-cols-1 gap-4">
+          <Field label="Hero Heading" value={settings?.heroHeading} onChange={v => updateField('heroHeading', v)} />
+          <Field label="Hero Subtext" value={settings?.heroSubtext} onChange={v => updateField('heroSubtext', v)} type="textarea" />
+        </div>
       </div>
     </div>
   );
