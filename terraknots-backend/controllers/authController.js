@@ -35,16 +35,14 @@ exports.register = async (req, res, next) => {
 
         const token = generateToken(user._id);
 
-        // Send welcome email
-        try {
-            await sendEmail({
-                email: user.email,
-                subject: 'Welcome to TerraKnots! ✨',
-                html: getWelcomeEmail(user.name),
-            });
-        } catch (emailError) {
+        // Send welcome email (asynchronous - don't await)
+        sendEmail({
+            email: user.email,
+            subject: 'Welcome to TerraKnots! ✨',
+            html: getWelcomeEmail(user.name),
+        }).catch(emailError => {
             console.error('Error sending welcome email:', emailError);
-        }
+        });
 
         res.status(201).json({
             success: true,

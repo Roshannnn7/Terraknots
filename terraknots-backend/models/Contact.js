@@ -31,6 +31,10 @@ const contactSchema = new mongoose.Schema(
             enum: ['new', 'read', 'responded'],
             default: 'new',
         },
+        adminNotes: {
+            type: String,
+            default: '',
+        },
     },
     {
         timestamps: true,

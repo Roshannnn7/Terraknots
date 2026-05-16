@@ -63,7 +63,7 @@ exports.updateContactStatus = async (req, res, next) => {
     try {
         const contact = await Contact.findByIdAndUpdate(
             req.params.id,
-            { status: req.body.status },
+            req.body, // Support updating status and adminNotes
             { new: true, runValidators: true }
         );
 
@@ -73,7 +73,7 @@ exports.updateContactStatus = async (req, res, next) => {
 
         res.status(200).json({
             success: true,
-            message: 'Status updated successfully',
+            message: 'Contact updated successfully',
             contact,
         });
     } catch (error) {

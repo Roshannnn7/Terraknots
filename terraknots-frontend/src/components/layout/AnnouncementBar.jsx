@@ -20,13 +20,22 @@ export default function AnnouncementBar() {
 
     useEffect(() => {
         const dismissed = sessionStorage.getItem('announcementDismissed');
-        if (dismissed) setVisible(false);
+        if (dismissed) {
+            setVisible(false);
+            return;
+        }
 
         const fetchSettings = async () => {
             try {
                 const { data } = await api.get('/settings');
-                if (data.settings?.announcementText) {
-                    setItems([data.settings.announcementText, ...defaultItems]);
+                const { settings } = data;
+                if (settings) {
+                    if (settings.announcementActive === false) {
+                        setVisible(false);
+                    }
+                    if (settings.announcementText) {
+                        setItems([settings.announcementText, ...defaultItems]);
+                    }
                 }
             } catch {}
         };

@@ -26,19 +26,84 @@ const AdminSettingsPage = () => {
     const [activeTab, setActiveTab] = useState('store');
     const fileInputRef = useRef(null);
 
+    const fetchSettings = async () => {
+        setLoading(true);
+        try {
+            const { data } = await api.get('/settings/all');
+            setSettings(data.settings);
+        } catch (error) {
+            console.error('Error fetching settings');
+            toast.error('Failed to load settings');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
-        const fetchSettings = async () => {
-            try {
-                const { data } = await api.get('/settings/all');
-                setSettings(data.settings);
-            } catch (error) {
-                console.error('Error fetching settings');
-            } finally {
-                setLoading(false);
-            }
-        };
         fetchSettings();
     }, []);
+
+    const resetToDefaults = async () => {
+        if (!confirm('Are you sure you want to reset all settings to defaults? This cannot be undone.')) return;
+        
+        const defaultSettings = {
+            storeName: "TerraKnots",
+            storeTagline: "Handmade with heart, knot by knot",
+            contactEmail: "hello@terraknots.com",
+            whatsappNumber: "91XXXXXXXXXX",
+            instagramUrl: "https://instagram.com/terra_knots",
+            announcementText: "✨ Free shipping above ₹499 • 100% Handmade with love",
+            announcementActive: true,
+            shippingCharge: 49,
+            freeShippingThreshold: 499,
+            codCharge: 30,
+            upiId: "yourname@upi",
+            qrCodeImage: "",
+            upiEnabled: true,
+            codEnabled: true,
+            heroBannerImage: "",
+            heroHeading: "Handmade with heart, knot by knot",
+            heroSubtext: "Discover unique crochet, resin & clay creations",
+            socialLinks: {
+                instagram: "",
+                pinterest: "",
+                facebook: "",
+                youtube: ""
+            },
+            features: []
+        };
+
+        setSaving(true);
+        try {
+            const { data } = await api.put('/settings', defaultSettings);
+            setSettings(data.settings);
+            toast.success('Settings reset to defaults');
+        } catch (error) {
+            toast.error('Failed to reset settings');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    if (loading) return (
+        <div className="flex flex-col items-center justify-center py-20 space-y-4">
+            <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+            <p className="text-light italic font-accent text-lg">Waking up the looms...</p>
+        </div>
+    );
+    
+    if (!settings) return (
+        <div className="flex flex-col items-center justify-center py-20 space-y-6 bg-white rounded-[3rem] shadow-sm border border-gray-100">
+            <div className="text-center space-y-2">
+                <h2 className="text-2xl font-heading font-bold text-dark">Failed to load settings</h2>
+                <p className="text-light">Something went wrong while fetching the loom configuration.</p>
+            </div>
+            <div className="flex space-x-4">
+                <button onClick={fetchSettings} className="btn-primary px-8 py-3 rounded-xl">Retry</button>
+                <button onClick={resetToDefaults} className="bg-gray-100 text-dark px-8 py-3 rounded-xl hover:bg-gray-200 transition-all font-bold">Reset to Defaults</button>
+            </div>
+        </div>
+    );
 
     const handleUpdate = (field, value) => {
         setSettings({ ...settings, [field]: value });
@@ -216,23 +281,7 @@ const AdminSettingsPage = () => {
 
                         {activeTab === 'payment' && (
                             <div className="space-y-8">
-                                <div className="p-8 bg-background rounded-[2.5rem] space-y-6">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center space-x-3 text-primary">
-                                            <CreditCard size={20} />
-                                            <h4 className="text-sm font-bold uppercase tracking-widest">Razorpay Gateway</h4>
-                                        </div>
-                                        <label className="relative inline-flex items-center cursor-pointer">
-                                            <input
-                                                type="checkbox" className="sr-only peer"
-                                                checked={settings.razorpayEnabled}
-                                                onChange={(e) => handleUpdate('razorpayEnabled', e.target.checked)}
-                                            />
-                                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                                        </label>
-                                    </div>
-                                    <p className="text-xs text-light italic">Configure keys in backend .env for security.</p>
-                                </div>
+                                {/* Payment methods removed Razorpay as requested */}
 
                                 <div className="p-8 bg-white border border-gray-100 rounded-[2.5rem] space-y-6 shadow-inner">
                                     <div className="flex items-center justify-between">

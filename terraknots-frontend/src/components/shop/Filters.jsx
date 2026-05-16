@@ -1,8 +1,24 @@
 'use client';
 
-import { CATEGORIES, PRICE_RANGES, MATERIALS } from '@/lib/constants';
+import { useState, useEffect } from 'react';
+import { PRICE_RANGES, MATERIALS } from '@/lib/constants';
+import api from '@/lib/api';
 
 const Filters = ({ filters, setFilters }) => {
+    const [categories, setCategories] = useState([]);
+
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const { data } = await api.get('/categories');
+                setCategories(['All', ...data.categories.map(c => c.name)]);
+            } catch (error) {
+                console.error('Failed to fetch categories');
+            }
+        };
+        fetchCategories();
+    }, []);
+
     const handleCategoryChange = (cat) => {
         setFilters({ ...filters, category: cat });
     };
@@ -25,7 +41,7 @@ const Filters = ({ filters, setFilters }) => {
             <div className="space-y-4">
                 <h4 className="text-lg font-heading font-bold text-dark border-b border-gray-100 pb-2">Categories</h4>
                 <div className="flex flex-col space-y-2">
-                    {CATEGORIES.map(cat => (
+                    {categories.map(cat => (
                         <button
                             key={cat}
                             onClick={() => handleCategoryChange(cat)}

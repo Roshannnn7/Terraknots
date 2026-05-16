@@ -5,6 +5,7 @@ const Product = require('../models/Product');
 const Review = require('../models/Review');
 const Settings = require('../models/Settings');
 const Coupon = require('../models/Coupon');
+const Category = require('../models/Category');
 
 dotenv.config();
 
@@ -222,6 +223,8 @@ const products = [
     },
 ];
 
+dotenv.config();
+
 const seedData = async () => {
     try {
         await mongoose.connect(process.env.MONGO_URI);
@@ -232,7 +235,7 @@ const seedData = async () => {
         await Review.deleteMany();
         await Settings.deleteMany();
         await Coupon.deleteMany();
-
+        await Category.deleteMany();
         console.log('🗑️  Existing data cleared');
 
         // Create Admin User
@@ -241,31 +244,56 @@ const seedData = async () => {
             email: 'admin@terraknots.com',
             password: 'Terraknots@1205',
             role: 'admin',
-            phone: '+91 98765 43210',
+            phone: '9035999354',
         });
 
-        console.log('👤 Admin user created: admin@terraknots.com / Terraknots@1205');
+        console.log('👤 Admin user created');
 
-        // Create Products with unique slugs
+        // Create Categories
+        const categoriesData = [
+            { name: 'Crochet', icon: '🧶', color: '#C4A882', description: 'Handknitted with love' },
+            { name: 'Resin', icon: '✨', color: '#D4A574', description: 'Sparkling creations' },
+            { name: 'Clay', icon: '🏺', color: '#A8B5A2', description: 'Earthy elegance' },
+            { name: 'Decor', icon: '🪴', color: '#C9B09B', description: 'Home with soul' },
+            { name: 'Keychains', icon: '🔑', color: '#D1A3B0', description: 'Tiny companions' },
+            { name: 'Anime', icon: '🎌', color: '#968FA0', description: 'Otaku treasures' }
+        ];
+        await Category.insertMany(categoriesData);
+        console.log('🏷️  Categories seeded');
+
+        // Create Products
         const createdProducts = await Product.insertMany(products);
         console.log(`📦 ${createdProducts.length} Products created`);
 
         // Create Default Settings
         await Settings.create({
             storeName: 'TerraKnots',
+            storeTagline: 'Handmade with heart, knot by knot',
             contactEmail: 'hello@terraknots.com',
-            whatsappNumber: '+919876543210',
+            whatsappNumber: '9035999354',
             instagramUrl: 'https://instagram.com/terra_knots',
-            announcementText: '✨ Free shipping on orders above ₹499 | 100% Handmade with love 🧶',
-            announcementEnabled: true,
+            announcementText: '✨ Free shipping above ₹499 • 100% Handmade with love',
+            announcementActive: true,
             shippingCharge: 49,
             freeShippingThreshold: 499,
             codCharge: 30,
-            razorpayEnabled: true,
-            upiManualEnabled: true,
+            upiId: '9035999354@axl',
+            upiEnabled: true,
             codEnabled: true,
-            heroHeading: 'Handmade with heart, knot by knot.',
-            heroSubtext: 'Discover unique crochet, resin & clay creations — each piece crafted with love and patience.',
+            heroBannerImage: 'https://images.unsplash.com/photo-1596489370642-e160e1d51a66?w=1600&h=900&fit=crop',
+            heroHeading: 'Handmade with heart, knot by knot',
+            heroSubtext: 'Discover unique crochet, resin & clay creations',
+            socialLinks: {
+                instagram: 'https://instagram.com/terra_knots',
+                pinterest: '',
+                facebook: '',
+                youtube: ''
+            },
+            features: [
+                { title: '100% Handmade', icon: 'Heart' },
+                { title: 'Safe Shipping', icon: 'Truck' },
+                { title: 'Unique Designs', icon: 'Sparkles' }
+            ]
         });
 
         console.log('⚙️  Default settings created');

@@ -7,13 +7,17 @@ const settingsSchema = new mongoose.Schema(
             type: String,
             default: 'TerraKnots',
         },
+        storeTagline: {
+            type: String,
+            default: 'Handmade with heart, knot by knot',
+        },
         contactEmail: {
             type: String,
             default: 'hello@terraknots.com',
         },
         whatsappNumber: {
             type: String,
-            default: '+91 XXXXXXXXXX',
+            default: '91XXXXXXXXXX',
         },
         instagramUrl: {
             type: String,
@@ -23,9 +27,9 @@ const settingsSchema = new mongoose.Schema(
         // Announcement Bar
         announcementText: {
             type: String,
-            default: '✨ Free shipping on orders above ₹499 | 100% Handmade with love 💛',
+            default: '✨ Free shipping above ₹499 • 100% Handmade with love',
         },
-        announcementEnabled: {
+        announcementActive: {
             type: Boolean,
             default: true,
         },
@@ -34,33 +38,26 @@ const settingsSchema = new mongoose.Schema(
         shippingCharge: {
             type: Number,
             default: 49,
-            min: [0, 'Shipping charge cannot be negative'],
         },
         freeShippingThreshold: {
             type: Number,
             default: 499,
-            min: [0, 'Free shipping threshold cannot be negative'],
         },
         codCharge: {
             type: Number,
             default: 30,
-            min: [0, 'COD charge cannot be negative'],
         },
 
         // Payment Settings
         upiId: {
             type: String,
-            default: '',
+            default: 'yourname@upi',
         },
-        upiQrCode: {
+        qrCodeImage: {
             type: String,
             default: '',
         },
-        razorpayEnabled: {
-            type: Boolean,
-            default: true,
-        },
-        upiManualEnabled: {
+        upiEnabled: {
             type: Boolean,
             default: true,
         },
@@ -70,18 +67,30 @@ const settingsSchema = new mongoose.Schema(
         },
 
         // Homepage Settings
-        heroImage: {
+        heroBannerImage: {
             type: String,
             default: '',
         },
         heroHeading: {
             type: String,
-            default: 'Handmade with heart, knot by knot.',
+            default: 'Handmade with heart, knot by knot',
         },
         heroSubtext: {
             type: String,
-            default: 'Discover unique crochet, resin & clay creations — each piece crafted with love and patience.',
+            default: 'Discover unique crochet, resin & clay creations',
         },
+
+        socialLinks: {
+            instagram: { type: String, default: '' },
+            pinterest: { type: String, default: '' },
+            facebook: { type: String, default: '' },
+            youtube: { type: String, default: '' }
+        },
+
+        features: {
+            type: [Object],
+            default: []
+        }
     },
     {
         timestamps: true,

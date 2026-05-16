@@ -31,6 +31,23 @@ export default function Navbar() {
     const [prevCartCount, setPrevCartCount] = useState(cartCount);
     const [cartBounce, setCartBounce] = useState(false);
 
+    const [announcementActive, setAnnouncementActive] = useState(true);
+
+    useEffect(() => {
+        const fetchSettings = async () => {
+            try {
+                const { data } = await api.get('/settings');
+                if (data.settings?.announcementActive === false) {
+                    setAnnouncementActive(false);
+                }
+            } catch {}
+        };
+        fetchSettings();
+
+        const dismissed = sessionStorage.getItem('announcementDismissed');
+        if (dismissed) setAnnouncementActive(false);
+    }, []);
+
     const { scrollY } = useScroll();
     useMotionValueEvent(scrollY, 'change', (latest) => {
         setScrolled(latest > 20);
@@ -55,12 +72,11 @@ export default function Navbar() {
             <motion.header
                 className="fixed top-0 left-0 right-0 z-40 transition-all duration-300"
                 style={{
-                    top: '36px', // Adjusted for announcement bar — but it might be dismissed
+                    top: announcementActive ? '36px' : '0px',
                     backgroundColor: scrolled ? 'rgba(251,249,247,0.95)' : 'transparent',
                     backdropFilter: scrolled ? 'blur(10px)' : 'none',
                     boxShadow: scrolled ? '0 2px 20px rgba(0,0,0,0.06)' : 'none',
                 }}
-                animate={{ top: 0 }}
             >
                 <div className="container">
                     <div className="flex items-center justify-between h-[72px]">

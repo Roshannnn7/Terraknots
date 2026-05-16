@@ -1,9 +1,10 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
+import api from '@/lib/api';
 
 const categories = [
     {
@@ -149,6 +150,36 @@ function CategoryCard({ cat, index }) {
 }
 
 export default function Categories() {
+    const [categories, setCategories] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const { data } = await api.get('/categories');
+                setCategories(data.categories.slice(0, 6)); // Only show top 6 on home
+            } catch (error) {
+                console.error('Failed to fetch categories');
+                // Use some static ones as fallback if needed or just show nothing
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchCategories();
+    }, []);
+
+    if (loading) return (
+        <section className="section bg-background">
+            <div className="container grid grid-cols-2 md:grid-cols-3 gap-6">
+                {[1, 2, 3, 4, 5, 6].map(i => (
+                    <div key={i} className="aspect-[3/4] bg-white rounded-3xl animate-pulse shadow-sm border border-gray-100" />
+                ))}
+            </div>
+        </section>
+    );
+
+    if (categories.length === 0) return null;
+
     return (
         <section className="section bg-background relative overflow-hidden">
             {/* Background blobs */}
@@ -177,7 +208,15 @@ export default function Categories() {
                 {/* Grid */}
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
                     {categories.map((cat, i) => (
-                        <CategoryCard key={cat.slug} cat={cat} index={i} />
+                        <CategoryCard key={cat.slug} cat={{
+                            name: cat.name,
+                            slug: cat.slug,
+                            count: cat.productCount || 0,
+                            image: cat.image || 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=600&h=750&fit=crop',
+                            accent: cat.color || '#C4A882',
+                            emoji: cat.icon || '🧶',
+                            desc: cat.description || 'Handcrafted with love'
+                        }} index={i} />
                     ))}
                 </div>
 

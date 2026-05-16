@@ -23,10 +23,27 @@ const ProductForm = ({ initialData = null, isEdit = false }) => {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
     const [images, setImages] = useState(initialData?.images || []);
+    const [categories, setCategories] = useState([]);
+    const [fetchingCats, setFetchingCats] = useState(false);
+
+    useEffect(() => {
+        const fetchCats = async () => {
+            setFetchingCats(true);
+            try {
+                const { data } = await api.get('/categories');
+                setCategories(data.categories);
+            } catch (error) {
+                console.error('Failed to load categories');
+            } finally {
+                setFetchingCats(false);
+            }
+        };
+        fetchCats();
+    }, []);
 
     const [formData, setFormData] = useState({
         name: initialData?.name || '',
-        category: initialData?.category || 'Crochet',
+        category: initialData?.category || '',
         price: initialData?.price || '',
         salePrice: initialData?.salePrice || '',
         stock: initialData?.stock || '',
@@ -120,23 +137,17 @@ const ProductForm = ({ initialData = null, isEdit = false }) => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2">
                                 <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-light pl-4">Category</label>
-                                <input
-                                    type="text" required
-                                    className="input-field h-14"
-                                    placeholder="e.g. Keychains, Anime"
+                                <select
+                                    required
+                                    className="input-field h-14 appearance-none"
                                     value={formData.category}
                                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                                    list="categories-list"
-                                />
-                                <datalist id="categories-list">
-                                    <option value="Crochet" />
-                                    <option value="Resin" />
-                                    <option value="Clay" />
-                                    <option value="Decor" />
-                                    <option value="Accessories" />
-                                    <option value="Keychains" />
-                                    <option value="Anime Collections" />
-                                </datalist>
+                                >
+                                    <option value="">Select Category</option>
+                                    {categories.map(cat => (
+                                        <option key={cat._id} value={cat.name}>{cat.name}</option>
+                                    ))}
+                                </select>
                             </div>
                             <div className="space-y-2">
                                 <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-light pl-4">Availability (Stock)</label>

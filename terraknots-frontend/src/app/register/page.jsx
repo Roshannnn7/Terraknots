@@ -22,6 +22,7 @@ const RegisterPage = () => {
         confirmPassword: ''
     });
     const [loading, setLoading] = useState(false);
+    const [statusMessage, setStatusMessage] = useState('Create Account');
 
     useEffect(() => {
         if (isAuthenticated) {
@@ -31,22 +32,44 @@ const RegisterPage = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        
+        // Basic validation
+        if (!formData.name || !formData.email || !formData.password) {
+            return toast.error('Please fill in all required fields');
+        }
+
+        if (formData.password.length < 6) {
+            return toast.error('Password must be at least 6 characters long');
+        }
+
         if (formData.password !== formData.confirmPassword) {
             return toast.error('Passwords do not match');
         }
 
         setLoading(true);
+        setStatusMessage('Creating your account...');
+        
         try {
             await register({
                 name: formData.name,
                 email: formData.email,
                 password: formData.password
             });
-            toast.success('Welcome to the TerraKnots family! 💛');
+            
+            setStatusMessage('Almost there...');
+            
+            setTimeout(() => {
+                setStatusMessage('Welcome to TerraKnots! Redirecting...');
+                toast.success('Welcome to the TerraKnots family! 💛');
+            }, 1000);
+
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Registration failed');
-        } finally {
             setLoading(false);
+            setStatusMessage('Create Account');
+            const message = error.code === 'ECONNABORTED' 
+                ? 'Registration taking too long. Please check your connection.' 
+                : (error.response?.data?.message || 'Registration failed');
+            toast.error(message);
         }
     };
 
@@ -135,7 +158,10 @@ const RegisterPage = () => {
                                     className="w-full btn-primary h-14 flex items-center justify-center space-x-3 text-lg mt-4"
                                 >
                                     {loading ? (
-                                        <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                        <div className="flex items-center space-x-3">
+                                            <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                            <span>{statusMessage}</span>
+                                        </div>
                                     ) : (
                                         <>
                                             <UserPlus size={20} />

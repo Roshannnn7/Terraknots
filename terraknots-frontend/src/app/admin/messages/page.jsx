@@ -10,7 +10,8 @@ import {
     Circle,
     Eye,
     Trash2,
-    Reply
+    Reply,
+    Edit2
 } from 'lucide-react';
 import api from '@/lib/api';
 import { format } from 'date-fns';
@@ -156,6 +157,32 @@ const MessageManagementPage = () => {
                                         <p className="text-dark font-medium leading-relaxed font-body whitespace-pre-wrap">
                                             {selectedMessage.message}
                                         </p>
+                                    </div>
+
+                                    {/* Admin Notes Section */}
+                                    <div className="space-y-4 pt-4">
+                                        <div className="flex items-center space-x-2 text-light">
+                                            <Edit2 size={14} />
+                                            <label className="text-[10px] font-bold uppercase tracking-[0.2em]">Internal Artisan Notes</label>
+                                        </div>
+                                        <textarea
+                                            className="w-full bg-background border-none rounded-[2rem] p-6 text-sm focus:ring-2 focus:ring-primary/20 transition-all resize-none min-h-[120px]"
+                                            placeholder="Add notes about this inquiry (e.g. 'Processing refund', 'Special custom order request')..."
+                                            value={selectedMessage.adminNotes || ''}
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                setSelectedMessage(prev => ({ ...prev, adminNotes: val }));
+                                                // Debounced or direct save
+                                            }}
+                                            onBlur={async () => {
+                                                try {
+                                                    await api.put(`/contact/${selectedMessage._id}/status`, { adminNotes: selectedMessage.adminNotes });
+                                                    toast.success('Notes saved');
+                                                } catch (error) {
+                                                    toast.error('Failed to save notes');
+                                                }
+                                            }}
+                                        />
                                     </div>
                                 </div>
 
