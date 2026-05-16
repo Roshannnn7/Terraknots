@@ -24,7 +24,7 @@ function HandmadeBadge() {
     );
 }
 
-export default function ProductCard({ product, onQuickView }) {
+export default function ProductCard({ product, onQuickView, priority = false }) {
     const { addToCart } = useCart();
     const { toggleWishlist, isWishlisted } = useWishlist();
     const [addedToCart, setAddedToCart] = useState(false);
@@ -75,6 +75,7 @@ export default function ProductCard({ product, onQuickView }) {
                             fill
                             className="object-cover"
                             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                            priority={priority}
                         />
                     </motion.div>
                 </AnimatePresence>

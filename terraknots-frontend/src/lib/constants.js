@@ -1,4 +1,4 @@
-export const CATEGORIES = ['All', 'Crochet', 'Resin', 'Clay', 'Decor', 'Accessories'];
+export const CATEGORIES = ['All', 'Crochet', 'Resin', 'Clay', 'Decor', 'Accessories', 'Keychains', 'Anime Collections'];
 
 export const SORT_OPTIONS = [
     { label: 'Newest', value: 'newest' },

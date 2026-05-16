@@ -10,7 +10,7 @@ const categories = [
         name: 'Crochet',
         slug: 'crochet',
         count: 14,
-        image: 'https://picsum.photos/seed/crochet-cat-hero/600/750',
+        image: '/images/workspace-crochet.jpg',
         accent: '#C4A882',
         emoji: '🧶',
         desc: 'Handknitted with love',
@@ -19,7 +19,7 @@ const categories = [
         name: 'Resin Art',
         slug: 'resin',
         count: 11,
-        image: 'https://picsum.photos/seed/resin-cat-hero/600/750',
+        image: 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=600&h=750&fit=crop',
         accent: '#D4A574',
         emoji: '✨',
         desc: 'Sparkling creations',
@@ -28,7 +28,7 @@ const categories = [
         name: 'Clay',
         slug: 'clay',
         count: 9,
-        image: 'https://picsum.photos/seed/clay-cat-hero/600/750',
+        image: 'https://images.unsplash.com/photo-1610701596007-11502861dcfa?w=600&h=750&fit=crop',
         accent: '#A8B5A2',
         emoji: '🏺',
         desc: 'Earthy elegance',
@@ -37,10 +37,28 @@ const categories = [
         name: 'Decor',
         slug: 'decor',
         count: 8,
-        image: 'https://picsum.photos/seed/decor-cat-hero/600/750',
+        image: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=600&h=750&fit=crop',
         accent: '#C9B09B',
         emoji: '🪴',
         desc: 'Home with soul',
+    },
+    {
+        name: 'Keychains',
+        slug: 'keychains',
+        count: 12,
+        image: 'https://images.unsplash.com/photo-1596489370642-e160e1d51a66?w=600&h=750&fit=crop',
+        accent: '#D1A3B0',
+        emoji: '🔑',
+        desc: 'Tiny companions',
+    },
+    {
+        name: 'Anime Collections',
+        slug: 'anime-collections',
+        count: 5,
+        image: 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=600&h=750&fit=crop',
+        accent: '#968FA0',
+        emoji: '🎌',
+        desc: 'Otaku treasures',
     },
 ];
 
@@ -157,7 +175,7 @@ export default function Categories() {
                 </motion.div>
 
                 {/* Grid */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
                     {categories.map((cat, i) => (
                         <CategoryCard key={cat.slug} cat={cat} index={i} />
                     ))}

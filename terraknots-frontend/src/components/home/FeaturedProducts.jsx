@@ -12,6 +12,8 @@ const tabs = [
     { label: '✨ Resin', value: 'resin' },
     { label: '🏺 Clay', value: 'clay' },
     { label: '🪴 Decor', value: 'decor' },
+    { label: '🔑 Keychains', value: 'keychains' },
+    { label: '🎌 Anime Collections', value: 'anime-collections' },
 ];
 
 // Shimmer skeleton
@@ -125,9 +127,9 @@ export default function FeaturedProducts() {
                             animate="animate"
                             className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-5 md:gap-6"
                         >
-                            {products.map((product) => (
+                            {products.map((product, index) => (
                                 <motion.div key={product._id} variants={staggerItem}>
-                                    <ProductCard product={product} />
+                                    <ProductCard product={product} priority={index < 4} />
                                 </motion.div>
                             ))}
                         </motion.div>

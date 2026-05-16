@@ -25,10 +25,6 @@ const productSchema = new mongoose.Schema(
         category: {
             type: String,
             required: [true, 'Please select a category'],
-            enum: {
-                values: ['Crochet', 'Resin', 'Clay', 'Decor', 'Accessories'],
-                message: 'Please select a valid category',
-            },
         },
         price: {
             type: Number,

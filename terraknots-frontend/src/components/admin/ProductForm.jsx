@@ -120,17 +120,23 @@ const ProductForm = ({ initialData = null, isEdit = false }) => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2">
                                 <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-light pl-4">Category</label>
-                                <select
-                                    className="input-field h-14 appearance-none"
+                                <input
+                                    type="text" required
+                                    className="input-field h-14"
+                                    placeholder="e.g. Keychains, Anime"
                                     value={formData.category}
                                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                                >
-                                    <option>Crochet</option>
-                                    <option>Resin</option>
-                                    <option>Clay</option>
-                                    <option>Decor</option>
-                                    <option>Accessories</option>
-                                </select>
+                                    list="categories-list"
+                                />
+                                <datalist id="categories-list">
+                                    <option value="Crochet" />
+                                    <option value="Resin" />
+                                    <option value="Clay" />
+                                    <option value="Decor" />
+                                    <option value="Accessories" />
+                                    <option value="Keychains" />
+                                    <option value="Anime Collections" />
+                                </datalist>
                             </div>
                             <div className="space-y-2">
                                 <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-light pl-4">Availability (Stock)</label>
