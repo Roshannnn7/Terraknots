@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import { Playfair_Display, Poppins, Dancing_Script } from 'next/font/google';
 import './globals.css';
 import { AuthProvider } from '@/context/AuthContext';
@@ -33,6 +34,9 @@ const dancing = Dancing_Script({
 });
 
 export default function RootLayout({ children }) {
+    const pathname = usePathname();
+    const isAdmin = pathname?.startsWith('/admin');
+
     useEffect(() => {
         // Detect low-end device or user preference
         const isLowEnd =
@@ -49,6 +53,9 @@ export default function RootLayout({ children }) {
 
     return (
         <html lang="en">
+            <head>
+                <link rel="icon" href="/images/logo.png" />
+            </head>
             <body className={`${playfair.variable} ${poppins.variable} ${dancing.variable} font-body bg-background text-dark antialiased`}>
                 <BackendWarmer />
                 <AuthProvider>
@@ -61,7 +68,7 @@ export default function RootLayout({ children }) {
                             </main>
                             <MobileBottomNav />
                             <ScrollToTop />
-                            <WhatsAppButton />
+                            {!isAdmin && <WhatsAppButton />}
                             <SocialProofPopup />
                             <ToastContainer
                                 position="bottom-right"

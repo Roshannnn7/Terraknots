@@ -1,5 +1,4 @@
-@echo off
-git status
 git add .
-git commit -m "Update shop layout, pagination, and category features"
+git commit -m "fix: dynamic categories, live search, and favicon 404 in admin panel"
 git push origin main
+pause

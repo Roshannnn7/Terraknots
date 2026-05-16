@@ -26,6 +26,7 @@ const ProductListPage = () => {
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [category, setCategory] = useState('All');
+    const [categoriesList, setCategoriesList] = useState([]);
 
     const fetchProducts = async () => {
         setLoading(true);
@@ -46,8 +47,23 @@ const ProductListPage = () => {
     };
 
     useEffect(() => {
-        fetchProducts();
-    }, [page, category]);
+        const fetchCategories = async () => {
+            try {
+                const data = await safeGet('/categories', { data: [] });
+                setCategoriesList(data?.data || []);
+            } catch (err) {
+                console.error('Error fetching categories:', err);
+            }
+        };
+        fetchCategories();
+    }, []);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            fetchProducts();
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [page, category, search]);
 
     const handleSearch = (e) => {
         if (e.key === 'Enter') {
@@ -101,10 +117,9 @@ const ProductListPage = () => {
                     onChange={(e) => { setCategory(e.target.value); setPage(1); }}
                 >
                     <option value="All">All Categories</option>
-                    <option value="Crochet">Crochet</option>
-                    <option value="Resin">Resin</option>
-                    <option value="Clay">Clay</option>
-                    <option value="Decor">Decor</option>
+                    {categoriesList.map(cat => (
+                        <option key={cat._id} value={cat.name}>{cat.name}</option>
+                    ))}
                 </select>
 
                 <button className="p-3 bg-background text-light rounded-2xl hover:text-primary transition-colors">
@@ -154,10 +169,10 @@ const ProductListPage = () => {
                                             </span>
                                         </td>
                                         <td className="px-8 py-4">
-                                            <div className="text-sm font-bold text-dark">₹{product?.salePrice || product?.price || 0}</div>
-                                            {product?.salePrice && product?.price && (
-                                                <div className="text-[10px] text-light line-through">₹{product?.price}</div>
-                                            )}
+                                             <div className="text-sm font-bold text-dark">₹{product?.salePrice || product?.price || 0}</div>
+                                             {product?.salePrice && product?.price && Number(product.salePrice) < Number(product.price) && (
+                                                 <div className="text-[10px] text-light line-through">₹{product?.price}</div>
+                                             )}
                                         </td>
                                         <td className="px-8 py-4">
                                             <div className={`text-xs font-bold ${product?.stock < 5 ? 'text-red-500' : 'text-dark'}`}>
