@@ -472,10 +472,10 @@ export default function EditProductPage() {
             </label>
 
             <div className="grid grid-cols-2 gap-3 mt-6">
-              {safeImages.map((img, i) => (
+              {safeImages.map((img, idx) => (
                 <div key={`img-${idx}`} className="relative group aspect-square rounded-2xl overflow-hidden shadow-sm border border-gray-100">
                   <img src={img} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                  {i === 0 && (
+                  {idx === 0 && (
                     <div className="absolute top-2 left-2 bg-[#C4A882] text-white text-[9px] font-bold px-2 py-1 rounded-lg uppercase tracking-widest shadow-lg">
                       Main Focus
                     </div>
@@ -483,15 +483,15 @@ export default function EditProductPage() {
                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                     <button
                       type="button"
-                      onClick={() => removeImage(i)}
+                      onClick={() => removeImage(idx)}
                       className="p-2 bg-white text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all shadow-lg"
                     >
                       🗑️
                     </button>
-                    {i > 0 && (
+                    {idx > 0 && (
                       <button
                         type="button"
-                        onClick={() => setMainImage(i)}
+                        onClick={() => setMainImage(idx)}
                         className="px-3 py-2 bg-white text-dark rounded-xl hover:bg-[#C4A882] hover:text-white transition-all font-bold text-[10px] shadow-lg"
                       >
                         Set Main
