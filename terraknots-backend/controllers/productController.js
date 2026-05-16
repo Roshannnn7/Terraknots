@@ -16,7 +16,7 @@ exports.getProducts = async (req, res, next) => {
             inStock,
             sortBy,
             page = 1,
-            limit = 24,
+            limit = 1000,
             featured,
         } = req.query;
 

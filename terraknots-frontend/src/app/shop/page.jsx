@@ -41,7 +41,7 @@ export default function ShopPage() {
     search: searchParams.get('search') || '',
     sortBy: searchParams.get('sort') || 'newest',
     page: 1,
-    limit: 24
+    limit: 1000
   });
 
   // Load Categories
@@ -223,7 +223,7 @@ export default function ShopPage() {
               {total > products.length && !loading && (
                 <div className="mt-16 text-center">
                   <button
-                    onClick={() => setFilters(prev => ({ ...prev, limit: prev.limit + 12 }))}
+                    onClick={() => setFilters(prev => ({ ...prev, limit: prev.limit + 24 }))}
                     className="group relative px-10 py-4 bg-white text-dark font-bold rounded-2xl border-2 border-primary/20 hover:border-primary hover:bg-primary hover:text-white transition-all duration-300 shadow-sm overflow-hidden"
                   >
                     <span className="relative z-10">Load More Treasures</span>

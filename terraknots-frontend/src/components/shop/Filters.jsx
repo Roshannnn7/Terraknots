@@ -123,7 +123,8 @@ const Filters = ({ filters, setFilters }) => {
                     inStock: false,
                     search: '',
                     sortBy: 'newest',
-                    page: 1
+                    page: 1,
+                    limit: 1000
                 })}
                 className="w-full py-4 text-[10px] font-bold uppercase tracking-widest text-light border border-dashed border-gray-300 rounded-2xl hover:bg-gray-50 transition-colors"
             >
