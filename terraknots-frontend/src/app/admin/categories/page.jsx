@@ -1,36 +1,18 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { 
-    Plus, 
-    Search, 
-    Filter, 
-    MoreVertical, 
-    Edit, 
-    Trash2, 
-    GripVertical, 
-    Tag, 
-    Eye, 
-    EyeOff,
-    Check,
-    X,
-    ImageIcon,
-    Upload
-} from 'lucide-react';
-import api from '@/lib/api';
-import { toast } from 'react-toastify';
+import axios from 'axios';
+import { toast } from 'react-hot-toast';
+import { Tag, Plus, Edit, Trash2, GripVertical, X, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const AdminCategoriesPage = () => {
+export default function CategoriesPage() {
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [filter, setFilter] = useState('all');
-    const [showModal, setShowModal] = useState(false);
+    const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingCategory, setEditingCategory] = useState(null);
     const [formData, setFormData] = useState({
         name: '',
-        slug: '',
         description: '',
         icon: '📦',
         color: '#C4A882',
@@ -42,8 +24,11 @@ const AdminCategoriesPage = () => {
     const fetchCategories = async () => {
         setLoading(true);
         try {
-            const { data } = await api.get('/categories/all');
-            setCategories(data.categories);
+            const token = localStorage.getItem('token');
+            const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/categories/all`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setCategories(res.data.data || []);
         } catch (error) {
             toast.error('Failed to load categories');
         } finally {
@@ -60,19 +45,17 @@ const AdminCategoriesPage = () => {
             setEditingCategory(cat);
             setFormData({
                 name: cat.name,
-                slug: cat.slug || '',
                 description: cat.description || '',
                 icon: cat.icon || '📦',
                 color: cat.color || '#C4A882',
                 image: cat.image || '',
                 displayOrder: cat.displayOrder || 0,
-                isActive: cat.isActive !== undefined ? cat.isActive : true
+                isActive: cat.isActive
             });
         } else {
             setEditingCategory(null);
             setFormData({
                 name: '',
-                slug: '',
                 description: '',
                 icon: '📦',
                 color: '#C4A882',
@@ -81,329 +64,268 @@ const AdminCategoriesPage = () => {
                 isActive: true
             });
         }
-        setShowModal(true);
-    };
-
-    const handleCloseModal = () => {
-        setShowModal(false);
-        setEditingCategory(null);
+        setIsModalOpen(true);
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
+            const token = localStorage.getItem('token');
             if (editingCategory) {
-                await api.put(`/categories/${editingCategory._id}`, formData);
-                toast.success('Category updated!');
+                await axios.put(`${process.env.NEXT_PUBLIC_API_URL}/categories/${editingCategory._id}`, formData, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                toast.success('Category updated');
             } else {
-                await api.post('/categories', formData);
-                toast.success('Category created!');
+                await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/categories`, formData, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                toast.success('Category created');
             }
+            setIsModalOpen(false);
             fetchCategories();
-            handleCloseModal();
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Action failed');
+            toast.error(error.response?.data?.message || 'Something went wrong');
         }
     };
 
     const handleDelete = async (id) => {
         if (!window.confirm('Are you sure you want to delete this category?')) return;
         try {
-            await api.delete(`/categories/${id}`);
+            const token = localStorage.getItem('token');
+            await axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/categories/${id}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
             toast.success('Category deleted');
             fetchCategories();
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Delete failed');
+            toast.error(error.response?.data?.message || 'Failed to delete');
         }
     };
 
     const toggleStatus = async (cat) => {
         try {
-            await api.put(`/categories/${cat._id}`, { isActive: !cat.isActive });
+            const token = localStorage.getItem('token');
+            await axios.put(`${process.env.NEXT_PUBLIC_API_URL}/categories/${cat._id}`, 
+                { isActive: !cat.isActive }, 
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
             toast.success(`Category ${!cat.isActive ? 'activated' : 'deactivated'}`);
             fetchCategories();
         } catch (error) {
-            toast.error('Status update failed');
+            toast.error('Failed to update status');
         }
     };
-
-    const handleImageUpload = async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        const formDataImg = new FormData();
-        formDataImg.append('image', file);
-
-        try {
-            toast.info('Uploading image...');
-            const { data } = await api.post('/upload/image', formDataImg, {
-                headers: { 'Content-Type': 'multipart/form-data' }
-            });
-            setFormData({ ...formData, image: data.url });
-            toast.success('Image uploaded!');
-        } catch (error) {
-            toast.error('Upload failed');
-        }
-    };
-
-    const filteredCategories = categories.filter(cat => {
-        const matchesSearch = cat.name.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesFilter = filter === 'all' || (filter === 'active' ? cat.isActive : !cat.isActive);
-        return matchesSearch && matchesFilter;
-    });
 
     return (
-        <div className="space-y-8">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="p-8 bg-[#FBF9F7] min-h-screen">
+            <div className="flex justify-between items-center mb-10">
                 <div>
-                    <h1 className="text-3xl font-heading font-bold text-dark">Category Management</h1>
-                    <p className="text-light italic font-accent text-lg">Organize your treasures into beautiful collections.</p>
+                    <h1 className="text-4xl font-heading font-bold text-dark flex items-center gap-3">
+                        <Tag className="text-primary" />
+                        Category Management
+                    </h1>
+                    <p className="text-light italic font-accent text-lg mt-2">Organize your handmade collections</p>
                 </div>
-                <button 
+                <button
                     onClick={() => handleOpenModal()}
-                    className="btn-primary h-14 px-8 flex items-center space-x-3 shadow-xl shadow-primary/20"
+                    className="bg-dark text-white px-8 h-14 rounded-2xl hover:bg-black transition-all font-bold shadow-lg shadow-dark/10 flex items-center gap-2"
                 >
                     <Plus size={20} />
-                    <span>Add New Category</span>
+                    Add Category
                 </button>
             </div>
 
-            {/* Filters & Search */}
-            <div className="flex flex-col md:flex-row gap-4 items-center bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-sm">
-                <div className="relative flex-1 w-full">
-                    <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-light" size={18} />
-                    <input 
-                        type="text" 
-                        placeholder="Search categories..." 
-                        className="input-field h-12 pl-14"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                </div>
-                <div className="flex items-center space-x-2 w-full md:w-auto">
-                    <Filter className="text-light" size={18} />
-                    <select 
-                        className="input-field h-12 w-full md:w-48"
-                        value={filter}
-                        onChange={(e) => setFilter(e.target.value)}
-                    >
-                        <option value="all">All Categories</option>
-                        <option value="active">Active Only</option>
-                        <option value="inactive">Inactive Only</option>
-                    </select>
-                </div>
-            </div>
-
-            {/* Categories List */}
             {loading ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {[1, 2, 3].map(i => <div key={i} className="h-48 bg-white rounded-[2.5rem] animate-pulse border border-gray-100" />)}
+                <div className="flex justify-center items-center h-64">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                </div>
+            ) : categories.length === 0 ? (
+                <div className="bg-white rounded-[3rem] p-20 text-center border border-gray-100 shadow-sm">
+                    <Tag size={64} className="mx-auto text-light opacity-20 mb-6" />
+                    <h3 className="text-2xl font-bold text-dark mb-2">No categories yet</h3>
+                    <p className="text-light mb-8">Start by creating your first product collection</p>
+                    <button onClick={() => handleOpenModal()} className="btn-primary">Create Category</button>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <AnimatePresence>
-                        {filteredCategories.map((cat, idx) => (
-                            <motion.div
-                                key={cat._id}
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, scale: 0.95 }}
-                                className="group bg-white rounded-[2.5rem] border border-gray-100 shadow-sm hover:shadow-xl hover:shadow-primary/5 transition-all p-6 relative overflow-hidden"
-                            >
-                                <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <div className="flex space-x-2">
-                                        <button onClick={() => handleOpenModal(cat)} className="p-2 bg-white shadow-md rounded-xl text-primary hover:bg-primary hover:text-white transition-all">
-                                            <Edit size={16} />
-                                        </button>
-                                        <button onClick={() => handleDelete(cat._id)} className="p-2 bg-white shadow-md rounded-xl text-red-500 hover:bg-red-500 hover:text-white transition-all">
-                                            <Trash2 size={16} />
-                                        </button>
-                                    </div>
+                    {categories.map((cat) => (
+                        <motion.div
+                            key={cat._id}
+                            layout
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="bg-white rounded-[2.5rem] p-6 border border-gray-100 shadow-sm hover:shadow-md transition-all group"
+                        >
+                            <div className="flex justify-between items-start mb-6">
+                                <div 
+                                    className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shadow-inner"
+                                    style={{ backgroundColor: `${cat.color}20` }}
+                                >
+                                    {cat.icon}
                                 </div>
-
-                                <div className="flex items-start space-x-6">
-                                    <div 
-                                        className="w-20 h-20 rounded-3xl flex items-center justify-center text-4xl shadow-inner shrink-0"
-                                        style={{ backgroundColor: `${cat.color}15`, color: cat.color }}
+                                <div className="flex gap-2">
+                                    <button 
+                                        onClick={() => handleOpenModal(cat)}
+                                        className="p-3 bg-background text-light hover:text-primary hover:bg-primary/10 rounded-xl transition-all"
                                     >
-                                        {cat.icon || '📦'}
+                                        <Edit size={18} />
+                                    </button>
+                                    <button 
+                                        onClick={() => handleDelete(cat._id)}
+                                        className="p-3 bg-background text-light hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                                    >
+                                        <Trash2 size={18} />
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="mb-6">
+                                <h3 className="text-xl font-bold text-dark mb-1">{cat.name}</h3>
+                                <p className="text-sm text-light line-clamp-2 min-h-[2.5rem]">{cat.description || 'No description'}</p>
+                            </div>
+
+                            <div className="flex items-center justify-between pt-6 border-t border-gray-50">
+                                <div className="flex items-center gap-4">
+                                    <div className="text-center">
+                                        <p className="text-[10px] text-light font-bold uppercase tracking-widest">Products</p>
+                                        <p className="text-sm font-bold text-dark">{cat.productCount || 0}</p>
                                     </div>
-                                    <div className="space-y-2 flex-1 min-w-0">
-                                        <div className="flex items-center space-x-2">
-                                            <h3 className="text-xl font-bold text-dark truncate">{cat.name}</h3>
-                                            <div 
-                                                onClick={() => toggleStatus(cat)}
-                                                className={`w-3 h-3 rounded-full cursor-pointer shadow-sm ${cat.isActive ? 'bg-green-500 ring-4 ring-green-50' : 'bg-gray-300 ring-4 ring-gray-50'}`}
-                                                title={cat.isActive ? 'Active' : 'Inactive'}
-                                            />
-                                        </div>
-                                        <p className="text-xs text-light line-clamp-2 italic">"{cat.description || 'No description provided.'}"</p>
-                                        <div className="flex items-center space-x-4 pt-2">
-                                            <div className="flex items-center space-x-1 text-[10px] font-bold text-primary uppercase tracking-widest bg-primary/5 px-3 py-1 rounded-full">
-                                                <Tag size={12} />
-                                                <span>{cat.productCount || 0} Products</span>
-                                            </div>
-                                            <div className="text-[10px] font-bold text-light uppercase tracking-widest">
-                                                Order: {cat.displayOrder}
-                                            </div>
-                                        </div>
+                                    <div className="text-center">
+                                        <p className="text-[10px] text-light font-bold uppercase tracking-widest">Order</p>
+                                        <p className="text-sm font-bold text-dark">#{cat.displayOrder}</p>
                                     </div>
                                 </div>
-
-                                {cat.image && (
-                                    <div className="mt-6 aspect-[21/9] rounded-2xl overflow-hidden grayscale group-hover:grayscale-0 transition-all duration-700">
-                                        <img src={cat.image} alt={cat.name} className="w-full h-full object-cover" />
-                                    </div>
-                                )}
-                            </motion.div>
-                        ))}
-                    </AnimatePresence>
-                </div>
-            )}
-
-            {/* Empty State */}
-            {!loading && filteredCategories.length === 0 && (
-                <div className="text-center py-20 bg-white rounded-[3rem] border border-dashed border-gray-200">
-                    <Tag className="mx-auto text-light opacity-30 mb-4" size={64} />
-                    <h3 className="text-xl font-bold text-dark">No categories found</h3>
-                    <p className="text-light">Start by creating a new collection for your treasures.</p>
-                    <button onClick={() => handleOpenModal()} className="mt-6 btn-primary px-8 py-3 rounded-xl">Add First Category</button>
+                                <button 
+                                    onClick={() => toggleStatus(cat)}
+                                    className={`px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${
+                                        cat.isActive 
+                                        ? 'bg-green-50 text-green-600 hover:bg-green-100' 
+                                        : 'bg-red-50 text-red-500 hover:bg-red-100'
+                                    }`}
+                                >
+                                    {cat.isActive ? 'Active' : 'Inactive'}
+                                </button>
+                            </div>
+                        </motion.div>
+                    ))}
                 </div>
             )}
 
             {/* Modal */}
             <AnimatePresence>
-                {showModal && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                        <motion.div 
-                            initial={{ opacity: 0 }} 
-                            animate={{ opacity: 1 }} 
-                            exit={{ opacity: 0 }}
-                            onClick={handleCloseModal}
-                            className="absolute inset-0 bg-dark/20 backdrop-blur-md"
-                        />
-                        <motion.div 
-                            initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                            className="relative w-full max-w-2xl bg-white rounded-[3rem] shadow-2xl overflow-hidden"
+                {isModalOpen && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-dark/20 backdrop-blur-sm">
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            className="bg-white rounded-[3rem] w-full max-w-xl shadow-2xl overflow-hidden"
                         >
-                            <div className="p-8 border-b border-gray-100 flex items-center justify-between bg-primary text-white">
+                            <div className="p-8 border-b border-gray-50 flex justify-between items-center bg-background/50">
                                 <div>
-                                    <h2 className="text-2xl font-heading font-bold">{editingCategory ? 'Edit Category' : 'Add New Category'}</h2>
-                                    <p className="text-xs opacity-80 uppercase tracking-widest font-bold">Category Details</p>
+                                    <h2 className="text-2xl font-bold text-dark">
+                                        {editingCategory ? 'Edit Category' : 'New Category'}
+                                    </h2>
+                                    <p className="text-xs text-light font-bold uppercase tracking-widest mt-1">Collection Details</p>
                                 </div>
-                                <button onClick={handleCloseModal} className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center hover:bg-white/20 transition-all">
-                                    <X size={24} />
+                                <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-white rounded-full transition-all">
+                                    <X size={24} className="text-light" />
                                 </button>
                             </div>
 
-                            <form onSubmit={handleSubmit} className="p-10 max-h-[70vh] overflow-y-auto no-scrollbar space-y-8">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-bold uppercase tracking-widest text-light pl-4">Category Name *</label>
-                                        <input 
+                            <form onSubmit={handleSubmit} className="p-8 space-y-6">
+                                <div className="grid grid-cols-2 gap-6">
+                                    <div className="col-span-2">
+                                        <label className="block text-[10px] font-bold text-light uppercase tracking-widest mb-2">Category Name</label>
+                                        <input
                                             required
-                                            className="input-field h-14"
+                                            type="text"
+                                            className="w-full bg-background border-none rounded-2xl px-6 h-14 font-bold text-dark focus:ring-2 focus:ring-primary/20 transition-all"
+                                            placeholder="e.g. Crochet Flowers"
                                             value={formData.name}
                                             onChange={(e) => setFormData({...formData, name: e.target.value})}
-                                            placeholder="e.g. Crochet Bows"
                                         />
                                     </div>
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-bold uppercase tracking-widest text-light pl-4">Slug (Auto-generated)</label>
-                                        <input 
-                                            className="input-field h-14 bg-gray-50 italic text-light"
-                                            value={formData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}
-                                            readOnly
-                                        />
+                                    <div className="col-span-2">
+                                        <label className="block text-[10px] font-bold text-light uppercase tracking-widest mb-2">Description</label>
+                                        <textarea
+                                            rows="3"
+                                            className="w-full bg-background border-none rounded-2xl px-6 py-4 font-medium text-dark focus:ring-2 focus:ring-primary/20 transition-all resize-none"
+                                            placeholder="What makes this collection special?"
+                                            value={formData.description}
+                                            onChange={(e) => setFormData({...formData, description: e.target.value})}
+                                        ></textarea>
                                     </div>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-bold uppercase tracking-widest text-light pl-4">Description</label>
-                                    <textarea 
-                                        className="input-field p-6 min-h-[100px] resize-none"
-                                        value={formData.description}
-                                        onChange={(e) => setFormData({...formData, description: e.target.value})}
-                                        placeholder="Describe this collection..."
-                                    />
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-bold uppercase tracking-widest text-light pl-4">Icon (Emoji)</label>
-                                        <input 
-                                            className="input-field h-14 text-center text-2xl"
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-light uppercase tracking-widest mb-2">Icon (Emoji)</label>
+                                        <input
+                                            type="text"
+                                            className="w-full bg-background border-none rounded-2xl px-6 h-14 text-2xl text-center focus:ring-2 focus:ring-primary/20 transition-all"
                                             value={formData.icon}
                                             onChange={(e) => setFormData({...formData, icon: e.target.value})}
                                         />
                                     </div>
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-bold uppercase tracking-widest text-light pl-4">Theme Color</label>
-                                        <div className="flex items-center space-x-3 h-14 bg-background rounded-2xl px-4 border border-gray-100">
-                                            <input 
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-light uppercase tracking-widest mb-2">Theme Color</label>
+                                        <div className="flex gap-2">
+                                            <input
                                                 type="color"
-                                                className="w-8 h-8 rounded-lg border-none cursor-pointer"
+                                                className="w-14 h-14 rounded-2xl border-none p-0 overflow-hidden cursor-pointer bg-background"
                                                 value={formData.color}
                                                 onChange={(e) => setFormData({...formData, color: e.target.value})}
                                             />
-                                            <span className="text-xs font-bold font-mono">{formData.color}</span>
+                                            <input
+                                                type="text"
+                                                className="flex-1 bg-background border-none rounded-2xl px-4 h-14 font-mono text-sm focus:ring-2 focus:ring-primary/20 transition-all"
+                                                value={formData.color}
+                                                onChange={(e) => setFormData({...formData, color: e.target.value})}
+                                            />
                                         </div>
                                     </div>
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-bold uppercase tracking-widest text-light pl-4">Display Order</label>
-                                        <input 
-                                            type="number"
-                                            className="input-field h-14"
-                                            value={formData.displayOrder}
-                                            onChange={(e) => setFormData({...formData, displayOrder: Number(e.target.value)})}
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="space-y-4">
-                                    <label className="text-[10px] font-bold uppercase tracking-widest text-light pl-4">Category Visual</label>
-                                    <div className="aspect-[21/9] rounded-3xl border-2 border-dashed border-gray-100 bg-background flex flex-col items-center justify-center cursor-pointer hover:border-primary transition-all relative overflow-hidden group">
-                                        {formData.image ? (
-                                            <img src={formData.image} alt="Preview" className="w-full h-full object-cover" />
-                                        ) : (
-                                            <div className="text-center">
-                                                <Upload size={32} className="text-light mx-auto mb-2" />
-                                                <p className="text-[10px] font-bold text-light uppercase">Upload Collection Banner</p>
-                                            </div>
-                                        )}
-                                        <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={handleImageUpload} />
-                                    </div>
-                                </div>
-
-                                <div className="p-6 bg-background rounded-[2rem] flex items-center justify-between">
-                                    <div className="flex items-center space-x-3">
-                                        <Eye className="text-primary" size={20} />
-                                        <span className="text-sm font-bold text-dark">Active Status</span>
-                                    </div>
-                                    <label className="relative inline-flex items-center cursor-pointer">
+                                    <div className="col-span-2">
+                                        <label className="block text-[10px] font-bold text-light uppercase tracking-widest mb-2">Banner Image URL</label>
                                         <input
-                                            type="checkbox" className="sr-only peer"
-                                            checked={formData.isActive}
-                                            onChange={(e) => setFormData({...formData, isActive: e.target.checked})}
+                                            type="text"
+                                            className="w-full bg-background border-none rounded-2xl px-6 h-14 font-medium text-dark focus:ring-2 focus:ring-primary/20 transition-all"
+                                            placeholder="https://..."
+                                            value={formData.image}
+                                            onChange={(e) => setFormData({...formData, image: e.target.value})}
                                         />
-                                        <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                                    </label>
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-light uppercase tracking-widest mb-2">Display Order</label>
+                                        <input
+                                            type="number"
+                                            className="w-full bg-background border-none rounded-2xl px-6 h-14 font-bold text-dark focus:ring-2 focus:ring-primary/20 transition-all"
+                                            value={formData.displayOrder}
+                                            onChange={(e) => setFormData({...formData, displayOrder: e.target.value})}
+                                        />
+                                    </div>
+                                    <div className="flex items-center">
+                                        <label className="flex items-center gap-3 cursor-pointer group mt-6">
+                                            <div 
+                                                onClick={() => setFormData({...formData, isActive: !formData.isActive})}
+                                                className={`w-12 h-6 rounded-full transition-all relative ${formData.isActive ? 'bg-primary' : 'bg-gray-200'}`}
+                                            >
+                                                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${formData.isActive ? 'left-7' : 'left-1'}`}></div>
+                                            </div>
+                                            <span className="text-sm font-bold text-dark">Is Active</span>
+                                        </label>
+                                    </div>
                                 </div>
 
-                                <div className="flex space-x-4 pt-4 pb-4">
-                                    <button 
+                                <div className="pt-6 flex gap-4">
+                                    <button
                                         type="button"
-                                        onClick={handleCloseModal}
+                                        onClick={() => setIsModalOpen(false)}
                                         className="flex-1 h-14 rounded-2xl bg-gray-50 text-light font-bold hover:bg-gray-100 transition-all"
                                     >
                                         Cancel
                                     </button>
-                                    <button 
+                                    <button
                                         type="submit"
-                                        className="flex-[2] h-14 rounded-2xl bg-primary text-white font-bold shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                                        className="flex-[2] h-14 rounded-2xl bg-primary text-white font-bold shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
                                     >
                                         {editingCategory ? 'Update Collection' : 'Create Collection'}
                                     </button>
@@ -415,6 +337,4 @@ const AdminCategoriesPage = () => {
             </AnimatePresence>
         </div>
     );
-};
-
-export default AdminCategoriesPage;
+}

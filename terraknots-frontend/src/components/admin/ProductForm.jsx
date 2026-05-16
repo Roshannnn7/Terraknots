@@ -144,9 +144,17 @@ const ProductForm = ({ initialData = null, isEdit = false }) => {
                                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                                 >
                                     <option value="">Select Category</option>
-                                    {categories.map(cat => (
-                                        <option key={cat._id} value={cat._id}>{cat.name}</option>
-                                    ))}
+                                    {fetchingCats ? (
+                                        <option disabled>Loading...</option>
+                                    ) : categories.length === 0 ? (
+                                        <option disabled>No categories. Add one first.</option>
+                                    ) : (
+                                        categories.map(cat => (
+                                            <option key={cat._id} value={cat.name}>
+                                                {cat.icon} {cat.name}
+                                            </option>
+                                        ))
+                                    )}
                                 </select>
                             </div>
                             <div className="space-y-2">

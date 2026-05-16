@@ -249,17 +249,62 @@ const seedData = async () => {
 
         console.log('👤 Admin user created');
 
-        // Create Categories
+        // Seed categories
+        await Category.deleteMany();
         const categoriesData = [
-            { name: 'Crochet', icon: '🧶', color: '#C4A882', description: 'Handknitted with love' },
-            { name: 'Resin', icon: '✨', color: '#D4A574', description: 'Sparkling creations' },
-            { name: 'Clay', icon: '🏺', color: '#A8B5A2', description: 'Earthy elegance' },
-            { name: 'Decor', icon: '🪴', color: '#C9B09B', description: 'Home with soul' },
-            { name: 'Keychains', icon: '🔑', color: '#D1A3B0', description: 'Tiny companions' },
-            { name: 'Anime', icon: '🎌', color: '#968FA0', description: 'Otaku treasures' }
+          {
+            name: "Crochet",
+            slug: "crochet",
+            description: "Handknitted with love — bows, flowers, pouches and more",
+            icon: "🧶",
+            color: "#C4A882",
+            image: "https://images.unsplash.com/photo-1604871000636-074fa5117945?w=600&q=80",
+            displayOrder: 1,
+            isActive: true
+          },
+          {
+            name: "Resin",
+            slug: "resin",
+            description: "Crystal clear art pieces — keychains, coasters, and accessories",
+            icon: "✨",
+            color: "#D4A574",
+            image: "https://images.unsplash.com/photo-1635405074683-96d6921a2a68?w=600&q=80",
+            displayOrder: 2,
+            isActive: true
+          },
+          {
+            name: "Clay",
+            slug: "clay",
+            description: "Earthy handmade jewelry — studs, hoops, and statement pieces",
+            icon: "🏺",
+            color: "#8B7355",
+            image: "https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=600&q=80",
+            displayOrder: 3,
+            isActive: true
+          },
+          {
+            name: "Decor",
+            slug: "decor",
+            description: "Handmade home accents — coasters, wall hangings, and more",
+            icon: "🌿",
+            color: "#A8B5A2",
+            image: "https://images.unsplash.com/photo-1513519245088-0e12902e35a6?w=600&q=80",
+            displayOrder: 4,
+            isActive: true
+          },
+          {
+            name: "Accessories",
+            slug: "accessories",
+            description: "Unique handcrafted accessories for everyday charm",
+            icon: "💫",
+            color: "#C9B09B",
+            image: "https://images.unsplash.com/photo-1602173574767-37ac01994b2a?w=600&q=80",
+            displayOrder: 5,
+            isActive: true
+          }
         ];
-        await Category.insertMany(categoriesData);
-        console.log('🏷️  Categories seeded');
+        const seededCategories = await Category.insertMany(categoriesData);
+        console.log('✅ Categories seeded:', seededCategories.length);
 
         // Create Products
         const createdProducts = await Product.insertMany(products);

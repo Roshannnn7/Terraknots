@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import {
     LayoutDashboard,
     Package,
+    Tag,
     ShoppingBag,
     Users,
     Star,
@@ -25,7 +26,7 @@ const AdminSidebar = () => {
     const menuItems = [
         { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
         { name: 'Products', href: '/admin/products', icon: Package },
-        { name: 'Categories', href: '/admin/categories', icon: Ticket },
+        { name: 'Categories', href: '/admin/categories', icon: Tag },
         { name: 'Orders', href: '/admin/orders', icon: ShoppingBag },
         { name: 'Customers', href: '/admin/customers', icon: Users },
         { name: 'Reviews', href: '/admin/reviews', icon: Star },

@@ -6,62 +6,7 @@ import Link from 'next/link';
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import api from '@/lib/api';
 
-const categories = [
-    {
-        name: 'Crochet',
-        slug: 'crochet',
-        count: 14,
-        image: '/images/workspace-crochet.jpg',
-        accent: '#C4A882',
-        emoji: '🧶',
-        desc: 'Handknitted with love',
-    },
-    {
-        name: 'Resin Art',
-        slug: 'resin',
-        count: 11,
-        image: 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=600&h=750&fit=crop',
-        accent: '#D4A574',
-        emoji: '✨',
-        desc: 'Sparkling creations',
-    },
-    {
-        name: 'Clay',
-        slug: 'clay',
-        count: 9,
-        image: 'https://images.unsplash.com/photo-1610701596007-11502861dcfa?w=600&h=750&fit=crop',
-        accent: '#A8B5A2',
-        emoji: '🏺',
-        desc: 'Earthy elegance',
-    },
-    {
-        name: 'Decor',
-        slug: 'decor',
-        count: 8,
-        image: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=600&h=750&fit=crop',
-        accent: '#C9B09B',
-        emoji: '🪴',
-        desc: 'Home with soul',
-    },
-    {
-        name: 'Keychains',
-        slug: 'keychains',
-        count: 12,
-        image: 'https://images.unsplash.com/photo-1596489370642-e160e1d51a66?w=600&h=750&fit=crop',
-        accent: '#D1A3B0',
-        emoji: '🔑',
-        desc: 'Tiny companions',
-    },
-    {
-        name: 'Anime Collections',
-        slug: 'anime-collections',
-        count: 5,
-        image: 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=600&h=750&fit=crop',
-        accent: '#968FA0',
-        emoji: '🎌',
-        desc: 'Otaku treasures',
-    },
-];
+
 
 function CategoryCard({ cat, index }) {
     const cardRef = useRef(null);
@@ -156,11 +101,10 @@ export default function Categories() {
     useEffect(() => {
         const fetchCategories = async () => {
             try {
-                const { data } = await api.get('/categories');
-                setCategories(data.categories.slice(0, 6)); // Only show top 6 on home
+                const res = await api.get('/categories');
+                setCategories(res.data.data.slice(0, 6)); // Only show top 6 on home
             } catch (error) {
                 console.error('Failed to fetch categories');
-                // Use some static ones as fallback if needed or just show nothing
             } finally {
                 setLoading(false);
             }

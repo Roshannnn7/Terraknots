@@ -24,18 +24,13 @@ exports.getProducts = async (req, res, next) => {
 
         // Category filter
         if (category && category !== 'All') {
-            // Check if category is a valid ObjectId
-            if (mongoose.Types.ObjectId.isValid(category)) {
-                query.category = category;
+            const cat = await Category.findOne({ 
+                $or: [{ slug: category }, { name: category }] 
+            });
+            if (cat) {
+                query.category = cat.name;
             } else {
-                // Assume it's a slug
-                const cat = await Category.findOne({ slug: category });
-                if (cat) {
-                    query.category = cat._id;
-                } else {
-                    // If slug doesn't exist, return empty
-                    query.category = new mongoose.Types.ObjectId();
-                }
+                query.category = category; // Fallback to direct name match
             }
         }
 

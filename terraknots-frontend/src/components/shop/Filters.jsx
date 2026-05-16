@@ -10,8 +10,8 @@ const Filters = ({ filters, setFilters }) => {
     useEffect(() => {
         const fetchCategories = async () => {
             try {
-                const { data } = await api.get('/categories');
-                setCategories(data.categories || []);
+                const res = await api.get('/categories');
+                setCategories(res.data.data || []);
             } catch (error) {
                 console.error('Failed to fetch categories');
             }
@@ -19,8 +19,8 @@ const Filters = ({ filters, setFilters }) => {
         fetchCategories();
     }, []);
 
-    const handleCategoryChange = (catId) => {
-        setFilters({ ...filters, category: catId, page: 1 });
+    const handleCategoryChange = (catName) => {
+        setFilters({ ...filters, category: catName, page: 1 });
     };
 
     const handlePriceChange = (range) => {
@@ -49,12 +49,12 @@ const Filters = ({ filters, setFilters }) => {
                     </button>
                     {categories.map(cat => (
                         <button
-                            key={cat._id}
-                            onClick={() => handleCategoryChange(cat._id)}
-                            className={`text-left text-sm py-1 transition-colors flex items-center justify-between group ${filters.category === cat._id ? 'text-primary font-bold' : 'text-light hover:text-primary'}`}
+                            key={cat.name}
+                            onClick={() => handleCategoryChange(cat.name)}
+                            className={`text-left text-sm py-1 transition-colors flex items-center justify-between group ${filters.category === cat.name ? 'text-primary font-bold' : 'text-light hover:text-primary'}`}
                         >
                             <span>{cat.name}</span>
-                            <span className={`text-[10px] px-2 py-0.5 rounded-full ${filters.category === cat._id ? 'bg-primary text-white' : 'bg-gray-100 text-light group-hover:bg-primary/10 group-hover:text-primary'}`}>
+                            <span className={`text-[10px] px-2 py-0.5 rounded-full ${filters.category === cat.name ? 'bg-primary text-white' : 'bg-gray-100 text-light group-hover:bg-primary/10 group-hover:text-primary'}`}>
                                 {cat.productCount || 0}
                             </span>
                         </button>

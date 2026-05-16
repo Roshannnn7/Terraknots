@@ -23,8 +23,7 @@ const productSchema = new mongoose.Schema(
             required: [true, 'Please provide a full description'],
         },
         category: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'Category',
+            type: String,
             required: [true, 'Please select a category'],
         },
         price: {
