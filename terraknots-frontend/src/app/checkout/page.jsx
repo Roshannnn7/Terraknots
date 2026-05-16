@@ -14,8 +14,7 @@ import { loadRazorpay } from '@/lib/loadRazorpay';
 import { toast } from 'react-toastify';
 import { motion } from 'framer-motion';
 import { CreditCard, Truck, ChevronRight, ShieldCheck, CheckCircle2 } from 'lucide-react';
-import * as confettiModule from 'canvas-confetti';
-const confetti = confettiModule.default || confettiModule;
+
 
 const CheckoutPage = () => {
     const router = useRouter();
@@ -181,6 +180,7 @@ const CheckoutPage = () => {
                             const { data: finalOrderRes } = await api.get(`/orders/${createdOrder._id}`);
                             const finalOrder = finalOrderRes.order;
 
+                            const confetti = (await import('canvas-confetti')).default;
                             confetti({
                                 particleCount: 150,
                                 spread: 70,

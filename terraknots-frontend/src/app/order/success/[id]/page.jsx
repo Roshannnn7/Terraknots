@@ -10,8 +10,7 @@ import api from '@/lib/api';
 import { formatPrice } from '@/lib/utils';
 import { CheckCircle2, Package, MapPin, ExternalLink } from 'lucide-react';
 import { motion } from 'framer-motion';
-import * as confettiModule from 'canvas-confetti';
-const confetti = confettiModule.default || confettiModule;
+
 
 const OrderSuccessPage = () => {
     const { id } = useParams();
@@ -23,6 +22,7 @@ const OrderSuccessPage = () => {
             try {
                 const { data } = await api.get(`/orders/${id}`);
                 setOrder(data.order);
+                const confetti = (await import('canvas-confetti')).default;
                 confetti({
                     particleCount: 150,
                     spread: 70,
