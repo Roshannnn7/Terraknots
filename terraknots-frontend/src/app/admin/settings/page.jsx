@@ -105,7 +105,7 @@ export default function SettingsPage() {
     <div className="p-6 max-w-7xl mx-auto">
       <div className="flex justify-between items-start mb-6">
         <div>
-          <h1 className="text-4xl font-serif">Loom Configuration</h1>
+          <h1 className="text-4xl font-serif text-[#2C2C2C]">Loom Configuration</h1>
           <p className="text-gray-500 italic">Fine-tune the soul of TerraKnots</p>
         </div>
         <div className="flex gap-2">
@@ -118,7 +118,7 @@ export default function SettingsPage() {
           <button 
             onClick={handleSave}
             disabled={!hasChanges || saving}
-            className="px-6 py-3 bg-[#C4A882] text-white rounded-xl disabled:opacity-50 font-semibold"
+            className="px-6 py-3 bg-[#C4A882] text-white rounded-xl disabled:opacity-50 font-semibold transition-all shadow-md hover:shadow-lg active:scale-95"
           >
             {saving ? 'Saving...' : 'Commit Changes'}
           </button>
@@ -145,7 +145,7 @@ export default function SettingsPage() {
         </div>
 
         {/* Tab Content */}
-        <div className="md:col-span-3 bg-white p-8 rounded-2xl shadow-sm">
+        <div className="md:col-span-3 bg-white p-8 rounded-2xl shadow-sm min-h-[500px]">
           {activeTab === 'general' && <GeneralTab settings={settings} updateField={updateField} />}
           {activeTab === 'appearance' && <AppearanceTab settings={settings} updateField={updateField} />}
           {activeTab === 'homepage' && <HomepageTab settings={settings} updateField={updateField} />}
@@ -163,8 +163,8 @@ export default function SettingsPage() {
 // GENERAL TAB
 function GeneralTab({ settings, updateField }) {
   return (
-    <div>
-      <h2 className="text-2xl font-serif mb-6">🏪 General Settings</h2>
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
+      <h2 className="text-2xl font-serif mb-6 text-[#2C2C2C]">🏪 General Settings</h2>
       <div className="grid grid-cols-2 gap-4">
         <Field label="Store Name" value={settings?.storeName} onChange={v => updateField('storeName', v)} />
         <Field label="Contact Email" type="email" value={settings?.contactEmail} onChange={v => updateField('contactEmail', v)} />
@@ -178,11 +178,13 @@ function GeneralTab({ settings, updateField }) {
             onChange={v => updateField('announcementActive', v)} 
           />
           {settings?.announcementActive && (
-            <Field 
-              value={settings?.announcementText} 
-              onChange={v => updateField('announcementText', v)} 
-              placeholder="Announcement message..."
-            />
+            <div className="mt-3">
+              <Field 
+                value={settings?.announcementText} 
+                onChange={v => updateField('announcementText', v)} 
+                placeholder="Announcement message..."
+              />
+            </div>
           )}
         </div>
       </div>
@@ -193,10 +195,10 @@ function GeneralTab({ settings, updateField }) {
 // APPEARANCE TAB
 function AppearanceTab({ settings, updateField }) {
   return (
-    <div>
-      <h2 className="text-2xl font-serif mb-6">🎨 Appearance</h2>
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
+      <h2 className="text-2xl font-serif mb-6 text-[#2C2C2C]">🎨 Appearance</h2>
       
-      <h3 className="text-lg font-semibold mb-3">Brand Colors</h3>
+      <h3 className="text-lg font-semibold mb-3 text-[#8B7355]">Brand Colors</h3>
       <div className="grid grid-cols-2 gap-4 mb-6">
         <ColorField label="Primary Color" value={settings?.primaryColor || '#C4A882'} onChange={v => updateField('primaryColor', v)} />
         <ColorField label="Secondary Color" value={settings?.secondaryColor || '#8B7355'} onChange={v => updateField('secondaryColor', v)} />
@@ -204,7 +206,7 @@ function AppearanceTab({ settings, updateField }) {
         <ColorField label="Background" value={settings?.backgroundColor || '#F5F0EB'} onChange={v => updateField('backgroundColor', v)} />
       </div>
 
-      <h3 className="text-lg font-semibold mb-3">Display Options</h3>
+      <h3 className="text-lg font-semibold mb-3 text-[#8B7355]">Display Options</h3>
       <div className="space-y-3">
         <Field type="number" label="Products Per Page" value={settings?.productsPerPage || 12} onChange={v => updateField('productsPerPage', Number(v))} />
         <Toggle label="Show Animations" checked={settings?.showAnimations} onChange={v => updateField('showAnimations', v)} />
@@ -217,8 +219,8 @@ function AppearanceTab({ settings, updateField }) {
 // HOMEPAGE TAB
 function HomepageTab({ settings, updateField }) {
   return (
-    <div>
-      <h2 className="text-2xl font-serif mb-6">🏠 Homepage</h2>
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
+      <h2 className="text-2xl font-serif mb-6 text-[#2C2C2C]">🏠 Homepage</h2>
       <div className="space-y-4">
         <Field label="Hero Heading" value={settings?.heroHeading} onChange={v => updateField('heroHeading', v)} />
         <Field label="Hero Subtext" value={settings?.heroSubtext} onChange={v => updateField('heroSubtext', v)} type="textarea" />
@@ -230,8 +232,8 @@ function HomepageTab({ settings, updateField }) {
 // PAYMENTS TAB
 function PaymentsTab({ settings, updateField }) {
   return (
-    <div>
-      <h2 className="text-2xl font-serif mb-6">💰 Payments</h2>
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
+      <h2 className="text-2xl font-serif mb-6 text-[#2C2C2C]">💰 Payments</h2>
       <div className="space-y-4">
         <Toggle label="UPI Payment Enabled" checked={settings?.upiEnabled} onChange={v => updateField('upiEnabled', v)} />
         <Field label="UPI ID" value={settings?.upiId} onChange={v => updateField('upiId', v)} placeholder="yourname@upi" />
@@ -245,8 +247,8 @@ function PaymentsTab({ settings, updateField }) {
 // SHIPPING TAB
 function ShippingTab({ settings, updateField }) {
   return (
-    <div>
-      <h2 className="text-2xl font-serif mb-6">🚚 Shipping</h2>
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
+      <h2 className="text-2xl font-serif mb-6 text-[#2C2C2C]">🚚 Shipping</h2>
       <div className="space-y-4">
         <Field type="number" label="Shipping Charge (₹)" value={settings?.shippingCharge || 49} onChange={v => updateField('shippingCharge', Number(v))} />
         <Field type="number" label="Free Shipping Above (₹)" value={settings?.freeShippingThreshold || 499} onChange={v => updateField('freeShippingThreshold', Number(v))} />
@@ -260,8 +262,8 @@ function ShippingTab({ settings, updateField }) {
 // NOTIFICATIONS TAB
 function NotificationsTab({ settings, updateField }) {
   return (
-    <div>
-      <h2 className="text-2xl font-serif mb-6">🔔 Notifications</h2>
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
+      <h2 className="text-2xl font-serif mb-6 text-[#2C2C2C]">🔔 Notifications</h2>
       <div className="space-y-3">
         <Toggle label="Email on New Order" checked={settings?.emailOnNewOrder} onChange={v => updateField('emailOnNewOrder', v)} />
         <Toggle label="Email on Low Stock" checked={settings?.emailOnLowStock} onChange={v => updateField('emailOnLowStock', v)} />
@@ -275,16 +277,16 @@ function NotificationsTab({ settings, updateField }) {
 // SOCIAL TAB
 function SocialTab({ settings, updateField }) {
   return (
-    <div>
-      <h2 className="text-2xl font-serif mb-6">🔗 Social & SEO</h2>
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
+      <h2 className="text-2xl font-serif mb-6 text-[#2C2C2C]">🔗 Social & SEO</h2>
       <div className="space-y-4">
-        <h3 className="font-semibold">Social Links</h3>
+        <h3 className="font-semibold text-[#8B7355]">Social Links</h3>
         <Field label="Instagram URL" value={settings?.instagramUrl} onChange={v => updateField('instagramUrl', v)} />
         <Field label="Facebook URL" value={settings?.facebookUrl} onChange={v => updateField('facebookUrl', v)} />
         <Field label="Pinterest URL" value={settings?.pinterestUrl} onChange={v => updateField('pinterestUrl', v)} />
         <Field label="YouTube URL" value={settings?.youtubeUrl} onChange={v => updateField('youtubeUrl', v)} />
         
-        <h3 className="font-semibold mt-6">SEO</h3>
+        <h3 className="font-semibold mt-6 text-[#8B7355]">SEO</h3>
         <Field label="Meta Title" value={settings?.metaTitle} onChange={v => updateField('metaTitle', v)} />
         <Field type="textarea" label="Meta Description" value={settings?.metaDescription} onChange={v => updateField('metaDescription', v)} />
         <Field label="Google Analytics ID" value={settings?.googleAnalyticsId} onChange={v => updateField('googleAnalyticsId', v)} placeholder="G-XXXXXXXXXX" />
@@ -296,8 +298,8 @@ function SocialTab({ settings, updateField }) {
 // POLICIES TAB
 function PoliciesTab({ settings, updateField }) {
   return (
-    <div>
-      <h2 className="text-2xl font-serif mb-6">📄 Policies & Content</h2>
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
+      <h2 className="text-2xl font-serif mb-6 text-[#2C2C2C]">📄 Policies & Content</h2>
       <div className="space-y-4">
         <Field type="textarea" label="About Page Content" value={settings?.aboutPageContent} onChange={v => updateField('aboutPageContent', v)} rows={6} />
         <Field type="textarea" label="Shipping Policy" value={settings?.shippingPolicy} onChange={v => updateField('shippingPolicy', v)} rows={6} />
@@ -313,14 +315,14 @@ function PoliciesTab({ settings, updateField }) {
 function Field({ label, value, onChange, type = 'text', placeholder = '', rows = 3 }) {
   return (
     <div>
-      {label && <label className="block text-xs font-semibold text-[#8B7355] uppercase tracking-widest mb-2">{label}</label>}
+      {label && <label className="block text-xs font-bold text-[#8B7355] uppercase tracking-widest mb-2">{label}</label>}
       {type === 'textarea' ? (
         <textarea
           value={value || ''}
           onChange={(e) => onChange(e.target.value)}
           rows={rows}
           placeholder={placeholder}
-          className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#C4A882]"
+          className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#C4A882] transition-colors resize-none"
         />
       ) : (
         <input
@@ -328,7 +330,7 @@ function Field({ label, value, onChange, type = 'text', placeholder = '', rows =
           value={value || ''}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
-          className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#C4A882]"
+          className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#C4A882] transition-colors"
         />
       )}
     </div>
@@ -338,19 +340,25 @@ function Field({ label, value, onChange, type = 'text', placeholder = '', rows =
 function ColorField({ label, value, onChange }) {
   return (
     <div>
-      <label className="block text-xs font-semibold text-[#8B7355] uppercase tracking-widest mb-2">{label}</label>
+      <label className="block text-xs font-bold text-[#8B7355] uppercase tracking-widest mb-2">{label}</label>
       <div className="flex gap-2 items-center">
-        <input
-          type="color"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="w-12 h-12 rounded-xl cursor-pointer border-2 border-gray-200"
-        />
+        <div className="relative w-12 h-12">
+          <input
+            type="color"
+            value={value || '#000000'}
+            onChange={(e) => onChange(e.target.value)}
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+          />
+          <div 
+            className="w-12 h-12 rounded-xl border-2 border-gray-200"
+            style={{ backgroundColor: value || '#000000' }}
+          />
+        </div>
         <input
           type="text"
-          value={value}
+          value={value || ''}
           onChange={(e) => onChange(e.target.value)}
-          className="flex-1 px-4 py-3 border border-gray-200 rounded-xl font-mono text-sm"
+          className="flex-1 px-4 py-3 border border-gray-200 rounded-xl font-mono text-sm focus:outline-none focus:border-[#C4A882]"
         />
       </div>
     </div>
@@ -359,9 +367,9 @@ function ColorField({ label, value, onChange }) {
 
 function Toggle({ label, description, checked, onChange }) {
   return (
-    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+    <div className="flex items-center justify-between p-4 bg-[#F5F0EB]/30 rounded-xl border border-[#F5F0EB]">
       <div>
-        <div className="font-medium">{label}</div>
+        <div className="font-semibold text-[#2C2C2C]">{label}</div>
         {description && <div className="text-xs text-gray-500">{description}</div>}
       </div>
       <button
@@ -369,7 +377,7 @@ function Toggle({ label, description, checked, onChange }) {
         onClick={() => onChange(!checked)}
         className={`relative w-12 h-6 rounded-full transition-colors ${checked ? 'bg-[#C4A882]' : 'bg-gray-300'}`}
       >
-        <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full transition-transform ${checked ? 'translate-x-6' : 'translate-x-0.5'}`} />
+        <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full transition-transform shadow-sm ${checked ? 'translate-x-6' : 'translate-x-0.5'}`} />
       </button>
     </div>
   );

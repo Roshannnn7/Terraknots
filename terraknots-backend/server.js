@@ -113,7 +113,7 @@ app.use('/api/testimonials', testimonialRoutes);
 
 // Root route
 app.get('/', (req, res) => {
-    res.json({ message: 'Welcome to TerraKnots API' });
+  res.json({ message: 'TerraKnots API is running', status: 'ok' });
 });
 
 // Error handling middleware
