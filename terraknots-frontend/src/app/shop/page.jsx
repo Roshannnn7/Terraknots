@@ -32,19 +32,29 @@ export default function ShopPage() {
     const [total, setTotal] = useState(0);
     const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
 
+    const [filters, setFilters] = useState({
+        category: searchParams.get('category') || 'All',
+        minPrice: '',
+        maxPrice: '',
+        materials: [],
+        inStock: false,
+        search: searchParams.get('search') || '',
+        sortBy: searchParams.get('sort') || 'newest',
+        page: 1,
+        limit: 12
+    });
+
     useEffect(() => {
         const fetchCats = async () => {
             try {
-                const { data } = await api.get('/categories');
-                setCategories(data.categories || []);
-            } catch (error) {}
+                const res = await api.get('/categories');
+                setCategories(res.data.data || []);
+            } catch (error) {
+                console.error('Error fetching categories:', error);
+            }
         };
         fetchCats();
     }, []);
-
-    const [filters, setFilters] = useState({
-[... lines 35-44 removed for brevity ...]
-    });
 
     useEffect(() => {
         const fetchProducts = async () => {
@@ -69,16 +79,21 @@ export default function ShopPage() {
         fetchProducts();
     }, [filters]);
 
-    // Update URL when category or sort changes
+    // Update URL when filters change
     useEffect(() => {
         const params = new URLSearchParams();
         if (filters.category && filters.category !== 'All') params.set('category', filters.category);
         if (filters.sortBy !== 'newest') params.set('sort', filters.sortBy);
         if (filters.search) params.set('search', filters.search);
         
-        const newUrl = params.toString() ? `/shop?${params.toString()}` : '/shop';
-        router.replace(newUrl, { scroll: false });
-    }, [filters.category, filters.sortBy, filters.search, router]);
+        const currentParams = searchParams.toString();
+        const newParams = params.toString();
+        
+        if (currentParams !== newParams) {
+            const newUrl = newParams ? `/shop?${newParams}` : '/shop';
+            router.replace(newUrl, { scroll: false });
+        }
+    }, [filters.category, filters.sortBy, filters.search, router, searchParams]);
 
     return (
         <>
@@ -195,7 +210,7 @@ export default function ShopPage() {
                             <div className="flex flex-wrap gap-2 mb-6">
                                 {filters.category !== 'All' && (
                                     <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-primary/10 text-primary text-xs font-bold rounded-full">
-                                        Category: {categories.find(c => c._id === filters.category)?.name || 'Loading...'}
+                                        Category: {categories.find(c => c.name === filters.category || c._id === filters.category)?.name || filters.category}
                                         <button onClick={() => setFilters({ ...filters, category: 'All', page: 1 })}><X size={12} /></button>
                                     </span>
                                 )}
@@ -225,11 +240,11 @@ export default function ShopPage() {
                                     >
                                         {[...Array(9)].map((_, i) => (
                                             <div key={i} className="bg-white rounded-2xl overflow-hidden shadow-sm" style={{ boxShadow: '0 4px 20px rgba(139,115,85,0.06)' }}>
-                                                <div className="skeleton aspect-[4/5]" />
+                                                <div className="w-full aspect-[4/5] bg-gray-100 animate-pulse" />
                                                 <div className="p-4 space-y-3">
-                                                    <div className="skeleton h-3 w-1/4 rounded-lg" />
-                                                    <div className="skeleton h-4 w-3/4 rounded-lg" />
-                                                    <div className="skeleton h-5 w-1/3 rounded-lg mt-2" />
+                                                    <div className="h-3 w-1/4 bg-gray-100 animate-pulse rounded-lg" />
+                                                    <div className="h-4 w-3/4 bg-gray-100 animate-pulse rounded-lg" />
+                                                    <div className="h-5 w-1/3 bg-gray-100 animate-pulse rounded-lg mt-2" />
                                                 </div>
                                             </div>
                                         ))}
@@ -264,7 +279,7 @@ export default function ShopPage() {
                                         </p>
                                         <button
                                             onClick={() => setFilters({
-                                                category: 'All', minPrice: '', maxPrice: '', materials: [], inStock: false, search: '', sortBy: 'newest', page: 1
+                                                category: 'All', minPrice: '', maxPrice: '', materials: [], inStock: false, search: '', sortBy: 'newest', page: 1, limit: 12
                                             })}
                                             className="btn-primary"
                                         >
