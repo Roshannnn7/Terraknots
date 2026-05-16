@@ -243,7 +243,7 @@ export default function Hero() {
                                 className="relative aspect-[4/5] organic-mask overflow-hidden shadow-warm"
                             >
                                 <Image
-                                    src="https://images.unsplash.com/photo-1517210122415-b0c70b2a09bf?w=800&h=1000&fit=crop"
+                                    src="/images/workspace-paint.jpg"
                                     alt="TerraKnots handmade workspace"
                                     fill
                                     priority

@@ -1,35 +1,24 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { motion } from 'framer-motion';
+import axios from 'axios';
 import toast from 'react-hot-toast';
-import { 
-  Save, 
-  ArrowLeft, 
-  Upload, 
-  X, 
-  Image as ImageIcon,
-  Star,
-  Tag,
-  DollarSign,
-  Package,
-  AlertCircle
-} from 'lucide-react';
-import { safeGet, safePut } from '@/lib/apiClient';
-import apiClient from '@/lib/apiClient';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
 export default function EditProductPage() {
   const router = useRouter();
-  const { id } = useParams();
+  const params = useParams();
+  const productId = params?.id;
   
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [uploadingImage, setUploadingImage] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [notFound, setNotFound] = useState(false);
   
   const [formData, setFormData] = useState({
     name: '',
-    slug: '',
     shortDescription: '',
     fullDescription: '',
     category: '',
@@ -44,543 +33,542 @@ export default function EditProductPage() {
     isFeatured: false,
     isActive: true,
     isBestseller: false,
-    isNewArrival: false,
-    metaTitle: '',
-    metaDescription: ''
+    isNewArrival: false
   });
-
+  
   const [materialInput, setMaterialInput] = useState('');
   const [tagInput, setTagInput] = useState('');
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const [categoriesData, productData] = await Promise.all([
-          safeGet('/categories', []),
-          safeGet(`/products/id/${id}`, null)
-        ]);
-        
-        setCategories(Array.isArray(categoriesData) ? categoriesData : []);
-        
-        if (productData) {
-          setFormData({
-            name: productData.name || '',
-            slug: productData.slug || '',
-            shortDescription: productData.shortDescription || '',
-            fullDescription: productData.fullDescription || '',
-            category: productData.category?.name || productData.category || '',
-            price: productData.price || '',
-            salePrice: productData.salePrice || '',
-            stock: productData.stock || 0,
-            images: productData.images || [],
-            materials: productData.materials || [],
-            careInstructions: productData.careInstructions || '',
-            dimensions: productData.dimensions || '',
-            tags: productData.tags || [],
-            isFeatured: productData.isFeatured || false,
-            isActive: productData.isActive !== false,
-            isBestseller: productData.isBestseller || false,
-            isNewArrival: productData.isNewArrival || false,
-            metaTitle: productData.metaTitle || '',
-            metaDescription: productData.metaDescription || ''
-          });
-        } else {
-          toast.error('Product not found');
-        }
-      } catch (err) {
-        console.error('Failed to load data:', err);
-        toast.error('Failed to load product details');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, [id]);
-
-  const handleChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+  const getToken = () => {
+    if (typeof window === 'undefined') return null;
+    return localStorage.getItem('adminToken') || localStorage.getItem('token');
   };
 
-  const handleImageUpload = async (e) => {
-    const files = Array.from(e.target.files || []);
-    if (files.length === 0) return;
+  // Fetch product and categories
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!productId) {
+        setNotFound(true);
+        setLoading(false);
+        return;
+      }
 
-    if ((formData.images?.length || 0) + files.length > 15) {
+      const token = getToken();
+      
+      try {
+        // Fetch product via new admin ID endpoint
+        const productRes = await axios.get(
+          `${API_URL}/products/admin/${productId}`,
+          { 
+            headers: { Authorization: `Bearer ${token}` },
+            timeout: 30000
+          }
+        );
+        
+        const product = productRes?.data?.data;
+        
+        if (!product) {
+          setNotFound(true);
+          setLoading(false);
+          return;
+        }
+
+        setFormData({
+          name: product.name || '',
+          shortDescription: product.shortDescription || '',
+          fullDescription: product.fullDescription || '',
+          category: product.category || '',
+          price: product.price || '',
+          salePrice: product.salePrice || '',
+          stock: product.stock || 0,
+          images: product.images || [],
+          materials: product.materials || [],
+          careInstructions: product.careInstructions || '',
+          dimensions: product.dimensions || '',
+          tags: product.tags || [],
+          isFeatured: !!product.isFeatured,
+          isActive: product.isActive !== false,
+          isBestseller: !!product.isBestseller,
+          isNewArrival: !!product.isNewArrival
+        });
+      } catch (err) {
+        console.error('Product fetch error:', err);
+        if (err?.response?.status === 404) {
+          setNotFound(true);
+        } else {
+          toast.error('Failed to load product');
+        }
+      }
+
+      // Fetch categories
+      try {
+        const catRes = await axios.get(`${API_URL}/categories`, { timeout: 30000 });
+        setCategories(catRes?.data?.data || []);
+      } catch (err) {
+        console.error('Categories fetch error:', err);
+        setCategories([]);
+      }
+
+      setLoading(false);
+    };
+
+    fetchData();
+  }, [productId]);
+
+  const handleImageUpload = async (e) => {
+    const files = Array.from(e?.target?.files || []);
+    if (files.length === 0) return;
+    
+    const currentCount = (formData?.images || []).length;
+    if (currentCount + files.length > 15) {
       toast.error('Maximum 15 images allowed');
       return;
     }
 
-    setUploadingImage(true);
-    const uploadedUrls = [];
+    setUploading(true);
+    const uploaded = [];
+    const token = getToken();
 
     for (const file of files) {
       if (file.size > 10 * 1024 * 1024) {
-        toast.error(`${file.name} is too large (max 10MB)`);
+        toast.error(`${file.name} too large (max 10MB)`);
         continue;
       }
-
       try {
-        const formDataUpload = new FormData();
-        formDataUpload.append('image', file);
-
-        const res = await apiClient.post('/upload/image', formDataUpload, {
-          headers: { 'Content-Type': 'multipart/form-data' }
+        const fd = new FormData();
+        fd.append('image', file);
+        const res = await axios.post(`${API_URL}/upload/image`, fd, {
+          headers: { 
+            'Content-Type': 'multipart/form-data',
+            Authorization: `Bearer ${token}`
+          },
+          timeout: 60000
         });
-
-        const url = res.data?.url || res.data?.data?.url;
-        if (url) uploadedUrls.push(url);
+        const url = res?.data?.url || res?.data?.data?.url || res?.data?.secure_url;
+        if (url) uploaded.push(url);
       } catch (err) {
-        console.error('Upload failed:', err);
-        toast.error(`Failed to upload ${file.name}`);
+        toast.error(`Failed: ${file.name}`);
       }
     }
 
     setFormData(prev => ({
       ...prev,
-      images: [...(prev.images || []), ...uploadedUrls]
+      images: [...(prev?.images || []), ...uploaded]
     }));
     
-    if (uploadedUrls.length > 0) {
-      toast.success(`${uploadedUrls.length} image(s) uploaded`);
-    }
-    setUploadingImage(false);
+    if (uploaded.length > 0) toast.success(`${uploaded.length} image(s) uploaded`);
+    setUploading(false);
   };
 
   const removeImage = (index) => {
     setFormData(prev => ({
       ...prev,
-      images: (prev.images || []).filter((_, i) => i !== index)
+      images: (prev?.images || []).filter((_, i) => i !== index)
     }));
   };
 
-  const moveImage = (fromIndex, toIndex) => {
-    const newImages = [...(formData.images || [])];
-    const [moved] = newImages.splice(fromIndex, 1);
-    newImages.splice(toIndex, 0, moved);
-    setFormData(prev => ({ ...prev, images: newImages }));
+  const setMainImage = (index) => {
+    if (index === 0) return;
+    setFormData(prev => {
+      const imgs = [...(prev?.images || [])];
+      const [moved] = imgs.splice(index, 1);
+      imgs.unshift(moved);
+      return { ...prev, images: imgs };
+    });
   };
 
   const addMaterial = () => {
-    if (materialInput.trim() && !(formData.materials || []).includes(materialInput.trim())) {
+    const val = materialInput.trim();
+    if (val && !(formData?.materials || []).includes(val)) {
       setFormData(prev => ({
         ...prev,
-        materials: [...(prev.materials || []), materialInput.trim()]
+        materials: [...(prev?.materials || []), val]
       }));
       setMaterialInput('');
     }
   };
 
-  const removeMaterial = (material) => {
+  const removeMaterial = (m) => {
     setFormData(prev => ({
       ...prev,
-      materials: (prev.materials || []).filter(m => m !== material)
+      materials: (prev?.materials || []).filter(x => x !== m)
     }));
   };
 
   const addTag = () => {
-    if (tagInput.trim() && !(formData.tags || []).includes(tagInput.trim())) {
+    const val = tagInput.trim();
+    if (val && !(formData?.tags || []).includes(val)) {
       setFormData(prev => ({
         ...prev,
-        tags: [...(prev.tags || []), tagInput.trim()]
+        tags: [...(prev?.tags || []), val]
       }));
       setTagInput('');
     }
   };
 
-  const removeTag = (tag) => {
+  const removeTag = (t) => {
     setFormData(prev => ({
       ...prev,
-      tags: (prev.tags || []).filter(t => t !== tag)
+      tags: (prev?.tags || []).filter(x => x !== t)
     }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!formData.name?.trim()) {
-      toast.error('Product name is required');
-      return;
-    }
-    if (!formData.category) {
-      toast.error('Please select a category');
-      return;
-    }
-    if (!formData.price || formData.price <= 0) {
-      toast.error('Please enter a valid price');
-      return;
-    }
+    if (!formData?.name?.trim()) return toast.error('Name required');
+    if (!formData?.category) return toast.error('Category required');
+    if (!formData?.price || Number(formData.price) <= 0) return toast.error('Valid price required');
 
-    setSubmitting(true);
-    const result = await safePut(`/products/${id}`, {
-      ...formData,
-      price: Number(formData.price),
-      salePrice: formData.salePrice ? Number(formData.salePrice) : undefined,
-      stock: Number(formData.stock) || 0
-    });
-
-    if (result.success) {
-      toast.success('Treasure updated successfully! 🧶');
+    setSaving(true);
+    try {
+      const token = getToken();
+      const payload = {
+        ...formData,
+        price: Number(formData.price),
+        salePrice: formData.salePrice ? Number(formData.salePrice) : undefined,
+        stock: Number(formData.stock) || 0
+      };
+      
+      await axios.put(`${API_URL}/products/${productId}`, payload, {
+        headers: { Authorization: `Bearer ${token}` },
+        timeout: 30000
+      });
+      
+      toast.success('Product updated! ✨');
       router.push('/admin/products');
-    } else {
-      toast.error(result.error || 'Failed to update product');
-      setSubmitting(false);
+    } catch (err) {
+      console.error('Update error:', err);
+      toast.error(err?.response?.data?.message || 'Failed to update product');
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirm('Delete this product? This cannot be undone.')) return;
+    
+    try {
+      const token = getToken();
+      await axios.delete(`${API_URL}/products/${productId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success('Product deleted');
+      router.push('/admin/products');
+    } catch (err) {
+      toast.error('Failed to delete');
     }
   };
 
   if (loading) {
     return (
-      <div className="p-20 text-center">
-        <div className="w-10 h-10 border-4 border-[#C4A882] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-        <p className="text-gray-500 italic">Unraveling details...</p>
+      <div className="p-8 text-center min-h-screen bg-[#FAF8F5] flex flex-col items-center justify-center">
+        <div className="text-6xl mb-4 animate-bounce">🧶</div>
+        <p className="text-gray-500 font-medium">Unraveling product details...</p>
       </div>
     );
   }
 
-  if (!formData.name && !loading) {
+  if (notFound) {
     return (
-      <div className="p-20 text-center">
-        <AlertCircle size={48} className="mx-auto text-red-400 mb-4" />
-        <h2 className="text-2xl font-serif text-[#2C2C2C]">Treasure not found</h2>
-        <button onClick={() => router.back()} className="mt-4 text-[#8B7355] underline">Go back</button>
+      <div className="p-8 text-center min-h-screen bg-[#FAF8F5] flex flex-col items-center justify-center">
+        <div className="text-6xl mb-4">⚠️</div>
+        <h2 className="text-3xl font-serif mb-3 text-dark">Treasure not found</h2>
+        <p className="text-gray-500 mb-6">This product doesn't exist or has been removed from the loom.</p>
+        <button 
+          onClick={() => router.push('/admin/products')}
+          className="px-8 py-3 bg-[#C4A882] text-white rounded-full font-bold shadow-lg hover:shadow-xl transition-all"
+        >
+          Back to Inventory
+        </button>
       </div>
     );
   }
+
+  const safeImages = formData?.images || [];
+  const safeMaterials = formData?.materials || [];
+  const safeTags = formData?.tags || [];
+  const safeCategories = categories || [];
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      <motion.div 
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex items-center justify-between mb-8"
-      >
+    <div className="p-6 max-w-7xl mx-auto pb-20">
+      <div className="flex justify-between items-start mb-8">
         <div>
-          <button 
-            onClick={() => router.back()}
-            className="flex items-center gap-2 text-[#8B7355] hover:text-[#5C4033] mb-2"
-          >
-            <ArrowLeft size={16} /> Back to Products
+          <button onClick={() => router.back()} className="text-sm font-bold text-[#8B7355] mb-2 hover:underline flex items-center gap-1">
+            ← Back to Products
           </button>
-          <h1 className="text-4xl font-serif text-[#2C2C2C]">Refine Treasure</h1>
-          <p className="text-gray-500 italic">Updating "{formData.name}"</p>
+          <h1 className="text-4xl font-serif text-[#2C2C2C] font-bold">Edit Product</h1>
+          <p className="text-light italic text-sm mt-1">ID: {productId}</p>
         </div>
-      </motion.div>
+        <button
+          type="button"
+          onClick={handleDelete}
+          className="px-5 py-2.5 bg-red-50 text-red-600 rounded-xl hover:bg-red-500 hover:text-white transition-all font-bold border border-red-100 flex items-center gap-2"
+        >
+          <span>🗑️</span> Delete Product
+        </button>
+      </div>
 
-      <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-white p-6 rounded-2xl shadow-sm"
-          >
-            <h2 className="text-xl font-serif mb-4 flex items-center gap-2">
-              <Package size={20} /> Basics
+      <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* LEFT COLUMN */}
+        <div className="lg:col-span-2 space-y-8">
+          {/* Basics */}
+          <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100">
+            <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
+              <span className="w-8 h-8 bg-[#C4A882]/10 text-[#C4A882] rounded-lg flex items-center justify-center">📝</span>
+              Product Basics
             </h2>
-
-            <div className="space-y-4">
+            <div className="space-y-6">
               <div>
-                <label className="block text-xs font-semibold text-[#8B7355] uppercase tracking-widest mb-2">
-                  Treasure Name *
-                </label>
+                <label className="block text-[10px] font-bold text-[#8B7355] uppercase tracking-widest mb-2">Product Name *</label>
                 <input
                   type="text"
                   value={formData?.name || ''}
-                  onChange={(e) => handleChange('name', e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#C4A882] transition-colors"
+                  onChange={(e) => setFormData({...formData, name: e.target.value})}
+                  className="w-full px-6 py-4 bg-background border-none rounded-2xl focus:ring-2 focus:ring-[#C4A882]/20 font-medium text-dark"
                   required
                 />
               </div>
-
-              <div className="grid grid-cols-2 gap-4">
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-xs font-semibold text-[#8B7355] uppercase tracking-widest mb-2">
-                    Category *
-                  </label>
+                  <label className="block text-[10px] font-bold text-[#8B7355] uppercase tracking-widest mb-2">Category *</label>
                   <select
                     value={formData?.category || ''}
-                    onChange={(e) => handleChange('category', e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#C4A882]"
+                    onChange={(e) => setFormData({...formData, category: e.target.value})}
+                    className="w-full px-6 py-4 bg-background border-none rounded-2xl focus:ring-2 focus:ring-[#C4A882]/20 font-bold text-dark appearance-none"
                     required
                   >
                     <option value="">Select Category</option>
-                    {(categories || []).map(cat => (
-                      <option key={cat._id || cat.name} value={cat.name}>
-                        {cat.icon || '📦'} {cat.name}
+                    {safeCategories.map((cat) => (
+                      <option key={cat?._id || cat?.name} value={cat?.name || ''}>
+                        {cat?.icon || '📦'} {cat?.name || 'Unknown'}
                       </option>
                     ))}
                   </select>
                 </div>
-
+                
                 <div>
-                  <label className="block text-xs font-semibold text-[#8B7355] uppercase tracking-widest mb-2">
-                    Stock
-                  </label>
+                  <label className="block text-[10px] font-bold text-[#8B7355] uppercase tracking-widest mb-2">Available Stock</label>
                   <input
                     type="number"
                     min="0"
-                    value={formData?.stock || 0}
-                    onChange={(e) => handleChange('stock', e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#C4A882]"
+                    value={formData?.stock ?? 0}
+                    onChange={(e) => setFormData({...formData, stock: e.target.value})}
+                    className="w-full px-6 py-4 bg-background border-none rounded-2xl focus:ring-2 focus:ring-[#C4A882]/20 font-medium text-dark"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-[#8B7355] uppercase tracking-widest mb-2">
-                  Short Description
-                </label>
+                <label className="block text-[10px] font-bold text-[#8B7355] uppercase tracking-widest mb-2">Short Hook (Snippet)</label>
                 <textarea
                   value={formData?.shortDescription || ''}
-                  onChange={(e) => handleChange('shortDescription', e.target.value)}
+                  onChange={(e) => setFormData({...formData, shortDescription: e.target.value})}
                   rows="2"
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#C4A882]"
+                  className="w-full px-6 py-4 bg-background border-none rounded-2xl focus:ring-2 focus:ring-[#C4A882]/20 font-medium text-dark resize-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-[#8B7355] uppercase tracking-widest mb-2">
-                  Full Description
-                </label>
+                <label className="block text-[10px] font-bold text-[#8B7355] uppercase tracking-widest mb-2">Full Story (Description)</label>
                 <textarea
                   value={formData?.fullDescription || ''}
-                  onChange={(e) => handleChange('fullDescription', e.target.value)}
-                  rows="5"
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#C4A882]"
+                  onChange={(e) => setFormData({...formData, fullDescription: e.target.value})}
+                  rows="6"
+                  className="w-full px-6 py-4 bg-background border-none rounded-2xl focus:ring-2 focus:ring-[#C4A882]/20 font-medium text-dark resize-none"
                 />
               </div>
             </div>
-          </motion.div>
+          </div>
 
-          {/* Pricing & Visibility */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="bg-white p-6 rounded-2xl shadow-sm"
-          >
-            <h2 className="text-xl font-serif mb-4 flex items-center gap-2">
-              <DollarSign size={20} /> Pricing & Visibility
+          {/* Details */}
+          <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100">
+            <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
+              <span className="w-8 h-8 bg-accent/10 text-accent rounded-lg flex items-center justify-center">✨</span>
+              Craft Details
             </h2>
-
-            <div className="grid grid-cols-2 gap-4 mb-4">
+            <div className="space-y-6">
               <div>
-                <label className="block text-xs font-semibold text-[#8B7355] uppercase tracking-widest mb-2">
-                  Main Price (₹) *
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={formData?.price || ''}
-                  onChange={(e) => handleChange('price', e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#C4A882]"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-[#8B7355] uppercase tracking-widest mb-2">
-                  Sale Price (₹)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={formData?.salePrice || ''}
-                  onChange={(e) => handleChange('salePrice', e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#C4A882]"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={formData?.isFeatured || false}
-                  onChange={(e) => handleChange('isFeatured', e.target.checked)}
-                  className="w-4 h-4 accent-[#C4A882]"
-                />
-                <span className="text-sm font-medium">⭐ Show in Featured</span>
-              </label>
-              <label className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={formData?.isBestseller || false}
-                  onChange={(e) => handleChange('isBestseller', e.target.checked)}
-                  className="w-4 h-4 accent-[#C4A882]"
-                />
-                <span className="text-sm font-medium">🏆 Bestseller Badge</span>
-              </label>
-              <label className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={formData?.isNewArrival || false}
-                  onChange={(e) => handleChange('isNewArrival', e.target.checked)}
-                  className="w-4 h-4 accent-[#C4A882]"
-                />
-                <span className="text-sm font-medium">✨ New Arrival Badge</span>
-              </label>
-              <label className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={formData?.isActive !== false}
-                  onChange={(e) => handleChange('isActive', e.target.checked)}
-                  className="w-4 h-4 accent-[#C4A882]"
-                />
-                <span className="text-sm font-medium">👁️ Active (visible on shop)</span>
-              </label>
-            </div>
-          </motion.div>
-
-          {/* Technicalities */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="bg-white p-6 rounded-2xl shadow-sm"
-          >
-            <h2 className="text-xl font-serif mb-4 flex items-center gap-2">
-              <Tag size={20} /> Technicalities
-            </h2>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-[#8B7355] uppercase tracking-widest mb-2">
-                  Dimensions
-                </label>
+                <label className="block text-[10px] font-bold text-[#8B7355] uppercase tracking-widest mb-2">Physical Dimensions</label>
                 <input
                   type="text"
                   value={formData?.dimensions || ''}
-                  onChange={(e) => handleChange('dimensions', e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#C4A882]"
+                  onChange={(e) => setFormData({...formData, dimensions: e.target.value})}
+                  placeholder="e.g. 5x5x2 inches"
+                  className="w-full px-6 py-4 bg-background border-none rounded-2xl focus:ring-2 focus:ring-[#C4A882]/20 font-medium text-dark"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-[#8B7355] uppercase tracking-widest mb-2">
-                  Care Instructions
-                </label>
-                <textarea
-                  value={formData?.careInstructions || ''}
-                  onChange={(e) => handleChange('careInstructions', e.target.value)}
-                  rows="3"
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#C4A882]"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-[#8B7355] uppercase tracking-widest mb-2">
-                  Materials
-                </label>
-                <div className="flex gap-2 mb-2">
+                <label className="block text-[10px] font-bold text-[#8B7355] uppercase tracking-widest mb-2">Materials Used</label>
+                <div className="flex gap-2 mb-3">
                   <input
                     type="text"
                     value={materialInput}
                     onChange={(e) => setMaterialInput(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addMaterial())}
-                    className="flex-1 px-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:border-[#C4A882]"
+                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addMaterial(); } }}
+                    placeholder="e.g. Organic Cotton"
+                    className="flex-1 px-6 py-4 bg-background border-none rounded-2xl focus:ring-2 focus:ring-[#C4A882]/20 font-medium text-dark"
                   />
-                  <button type="button" onClick={addMaterial} className="px-4 py-2 bg-[#C4A882] text-white rounded-xl">Add</button>
+                  <button type="button" onClick={addMaterial} className="px-6 py-4 bg-[#C4A882] text-white rounded-2xl font-bold">Add</button>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {(formData.materials || []).map(m => (
-                    <span key={m} className="px-3 py-1 bg-[#F2D7C9] text-[#8B7355] rounded-full text-sm flex items-center gap-1">
-                      {m}
-                      <button type="button" onClick={() => removeMaterial(m)}><X size={12} /></button>
+                  {safeMaterials.map((m, i) => (
+                    <span key={`${m}-${i}`} className="px-4 py-2 bg-[#F2D7C9]/40 text-[#8B7355] rounded-xl text-xs font-bold flex items-center gap-2 border border-[#F2D7C9]">
+                      {m} <button type="button" onClick={() => removeMaterial(m)} className="hover:text-red-500">×</button>
                     </span>
                   ))}
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-[#8B7355] uppercase tracking-widest mb-2">
-                  Tags
-                </label>
-                <div className="flex gap-2 mb-2">
+                <label className="block text-[10px] font-bold text-[#8B7355] uppercase tracking-widest mb-2">Search Tags</label>
+                <div className="flex gap-2 mb-3">
                   <input
                     type="text"
                     value={tagInput}
                     onChange={(e) => setTagInput(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
-                    className="flex-1 px-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:border-[#C4A882]"
+                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addTag(); } }}
+                    placeholder="e.g. gift-idea"
+                    className="flex-1 px-6 py-4 bg-background border-none rounded-2xl focus:ring-2 focus:ring-[#C4A882]/20 font-medium text-dark"
                   />
-                  <button type="button" onClick={addTag} className="px-4 py-2 bg-[#C4A882] text-white rounded-xl">Add</button>
+                  <button type="button" onClick={addTag} className="px-6 py-4 bg-[#C4A882] text-white rounded-2xl font-bold">Add</button>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {(formData.tags || []).map(t => (
-                    <span key={t} className="px-3 py-1 bg-[#A8B5A2]/30 text-[#5C4033] rounded-full text-sm flex items-center gap-1">
-                      #{t}
-                      <button type="button" onClick={() => removeTag(t)}><X size={12} /></button>
+                  {safeTags.map((t, i) => (
+                    <span key={`${t}-${i}`} className="px-4 py-2 bg-accent/10 text-accent rounded-xl text-xs font-bold flex items-center gap-2 border border-accent/20">
+                      #{t} <button type="button" onClick={() => removeTag(t)} className="hover:text-red-500">×</button>
                     </span>
                   ))}
                 </div>
               </div>
             </div>
-          </motion.div>
+          </div>
         </div>
 
-        <div className="space-y-6">
-          <motion.div 
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="bg-white p-6 rounded-2xl shadow-sm sticky top-24"
-          >
-            <h2 className="text-xl font-serif mb-4 flex items-center gap-2">
-              <ImageIcon size={20} /> Backdrop
+        {/* RIGHT COLUMN */}
+        <div className="space-y-8">
+          {/* Images */}
+          <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100">
+            <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
+              <span className="w-8 h-8 bg-secondary/10 text-secondary rounded-lg flex items-center justify-center">🖼️</span>
+              Gallery ({safeImages.length}/15)
             </h2>
-
-            <div className="text-xs text-gray-500 mb-3">
-              {(formData.images || []).length} of 15 images
-            </div>
-
-            <label className="block border-2 border-dashed border-gray-300 rounded-2xl p-8 text-center cursor-pointer hover:border-[#C4A882] hover:bg-[#F5F0EB]/50 transition-all mb-4">
+            
+            <label className="block border-2 border-dashed border-gray-100 rounded-2xl p-8 text-center cursor-pointer hover:border-[#C4A882] hover:bg-[#FBF9F7] transition-all group">
               <input
                 type="file"
                 multiple
                 accept="image/*"
                 onChange={handleImageUpload}
                 className="hidden"
-                disabled={uploadingImage || (formData.images || []).length >= 15}
+                disabled={uploading || safeImages.length >= 15}
               />
-              <Upload className="mx-auto mb-3 text-[#C4A882]" size={32} />
-              <p className="font-semibold text-[#2C2C2C]">
-                {uploadingImage ? 'Uploading...' : 'Drag & Drop images here'}
-              </p>
+              <div className="w-12 h-12 bg-[#FBF9F7] text-[#C4A882] rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                <span className="text-2xl">{uploading ? '⌛' : '➕'}</span>
+              </div>
+              <p className="font-bold text-dark">{uploading ? 'Processing...' : 'Add Visuals'}</p>
+              <p className="text-[10px] text-light uppercase tracking-widest mt-1">Square images work best</p>
             </label>
 
-            <div className="grid grid-cols-2 gap-2">
-              {(formData.images || []).map((img, idx) => (
-                <div key={idx} className="relative group">
-                  <img src={img} alt="" className="w-full h-24 object-cover rounded-xl" />
-                  {idx === 0 && (
-                    <div className="absolute top-1 left-1 bg-[#C4A882] text-white text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1">
-                      <Star size={10} fill="white" /> Main
+            <div className="grid grid-cols-2 gap-3 mt-6">
+              {safeImages.map((img, i) => (
+                <div key={`img-${idx}`} className="relative group aspect-square rounded-2xl overflow-hidden shadow-sm border border-gray-100">
+                  <img src={img} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                  {i === 0 && (
+                    <div className="absolute top-2 left-2 bg-[#C4A882] text-white text-[9px] font-bold px-2 py-1 rounded-lg uppercase tracking-widest shadow-lg">
+                      Main Focus
                     </div>
                   )}
-                  <button
-                    type="button"
-                    onClick={() => removeImage(idx)}
-                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <X size={12} />
-                  </button>
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => removeImage(i)}
+                      className="p-2 bg-white text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all shadow-lg"
+                    >
+                      🗑️
+                    </button>
+                    {i > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setMainImage(i)}
+                        className="px-3 py-2 bg-white text-dark rounded-xl hover:bg-[#C4A882] hover:text-white transition-all font-bold text-[10px] shadow-lg"
+                      >
+                        Set Main
+                      </button>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
-          </motion.div>
+          </div>
 
-          <motion.button
+          {/* Pricing & Badges */}
+          <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100">
+            <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
+              <span className="w-8 h-8 bg-terracotta/10 text-terracotta rounded-lg flex items-center justify-center">💰</span>
+              Economics
+            </h2>
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-bold text-[#8B7355] uppercase tracking-widest mb-2">Base Price (₹)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={formData?.price || ''}
+                    onChange={(e) => setFormData({...formData, price: e.target.value})}
+                    className="w-full px-6 py-4 bg-background border-none rounded-2xl focus:ring-2 focus:ring-[#C4A882]/20 font-bold text-dark"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-[#8B7355] uppercase tracking-widest mb-2">Sale Price (₹)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={formData?.salePrice || ''}
+                    onChange={(e) => setFormData({...formData, salePrice: e.target.value})}
+                    className="w-full px-6 py-4 bg-background border-none rounded-2xl focus:ring-2 focus:ring-[#C4A882]/20 font-bold text-dark"
+                  />
+                </div>
+              </div>
+              
+              <div className="space-y-3 pt-4 border-t border-gray-50">
+                <BadgeToggle label="⭐ Feature on Homepage" checked={!!formData?.isFeatured} onChange={(v) => setFormData({...formData, isFeatured: v})} />
+                <BadgeToggle label="🏆 Bestseller Highlight" checked={!!formData?.isBestseller} onChange={(v) => setFormData({...formData, isBestseller: v})} />
+                <BadgeToggle label="✨ New Arrival Spark" checked={!!formData?.isNewArrival} onChange={(v) => setFormData({...formData, isNewArrival: v})} />
+                <BadgeToggle label="👁️ Visible in Shop" checked={formData?.isActive !== false} onChange={(v) => setFormData({...formData, isActive: v})} />
+              </div>
+            </div>
+          </div>
+
+          <button
             type="submit"
-            disabled={submitting}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="w-full py-4 bg-gradient-to-r from-[#C4A882] to-[#D4A574] text-white rounded-2xl shadow-lg font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
+            disabled={saving}
+            className="w-full py-6 bg-dark text-white rounded-[2rem] font-bold text-lg shadow-xl shadow-dark/10 hover:shadow-2xl hover:-translate-y-1 transition-all disabled:opacity-50 flex items-center justify-center gap-3"
           >
-            <Save size={20} />
-            {submitting ? 'Updating...' : 'Update Treasure'}
-          </motion.button>
+            {saving ? '⌛ Weaving Changes...' : '💾 Save Product Changes'}
+          </button>
         </div>
       </form>
     </div>
+  );
+}
+
+function BadgeToggle({ label, checked, onChange }) {
+  return (
+    <button
+      type="button"
+      onClick={() => onChange(!checked)}
+      className={`w-full flex items-center justify-between p-4 rounded-2xl transition-all border-2 ${checked ? 'bg-[#C4A882]/5 border-[#C4A882]/20 text-dark' : 'bg-background border-transparent text-light opacity-60'}`}
+    >
+      <span className="text-xs font-bold uppercase tracking-wider">{label}</span>
+      <div className={`w-10 h-6 rounded-full relative transition-colors ${checked ? 'bg-[#C4A882]' : 'bg-gray-300'}`}>
+        <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${checked ? 'left-5' : 'left-1'}`} />
+      </div>
+    </button>
   );
 }
