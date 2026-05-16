@@ -13,7 +13,7 @@ import {
     FileText,
     ShoppingCart,
     Lock,
-    Tool,
+    Settings2,
     Save,
     Upload,
     Plus,
@@ -155,7 +155,7 @@ const AdminSettingsPage = () => {
         { id: 'policies', label: 'Policies & FAQ', icon: FileText },
         { id: 'product_cart', label: 'Product & Cart', icon: ShoppingCart },
         { id: 'security', label: 'Security', icon: Lock },
-        { id: 'tools', label: 'Tools', icon: Tool },
+        { id: 'tools', label: 'Tools', icon: Settings2 },
     ];
 
     return (

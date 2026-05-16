@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import AdminSidebar from '@/components/admin/AdminSidebar';
 import AdminTopbar from '@/components/admin/AdminTopbar';
+import ErrorBoundary from '@/components/ErrorBoundary';
 import { toast } from 'react-toastify';
 import api from '@/lib/api';
 
@@ -69,14 +70,16 @@ export default function AdminLayout({ children }) {
     if (!authorized) return null;
 
     return (
-        <div className="flex min-h-screen bg-[#F9F9F9]">
-            <AdminSidebar />
-            <div className="flex-1 flex flex-col min-w-0">
-                <AdminTopbar />
-                <main className="p-10">
-                    {children}
-                </main>
+        <ErrorBoundary>
+            <div className="flex min-h-screen bg-[#F9F9F9]">
+                <AdminSidebar />
+                <div className="flex-1 flex flex-col min-w-0">
+                    <AdminTopbar />
+                    <main className="p-10">
+                        {children}
+                    </main>
+                </div>
             </div>
-        </div>
+        </ErrorBoundary>
     );
 }
