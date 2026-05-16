@@ -25,6 +25,7 @@ const AdminSidebar = () => {
     const menuItems = [
         { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
         { name: 'Products', href: '/admin/products', icon: Package },
+        { name: 'Categories', href: '/admin/categories', icon: Ticket },
         { name: 'Orders', href: '/admin/orders', icon: ShoppingBag },
         { name: 'Customers', href: '/admin/customers', icon: Users },
         { name: 'Reviews', href: '/admin/reviews', icon: Star },
@@ -32,6 +33,9 @@ const AdminSidebar = () => {
         { name: 'Custom Orders', href: '/admin/custom-orders', icon: PenTool },
         { name: 'Coupons', href: '/admin/coupons', icon: Ticket },
         { name: 'Newsletter', href: '/admin/newsletter', icon: Mail },
+        { name: 'Media Library', href: '/admin/media', icon: ImageIcon },
+        { name: 'Finance', href: '/admin/finance', icon: LayoutDashboard },
+        { name: 'Activity Log', href: '/admin/activity-log', icon: MessageSquare },
         { name: 'Settings', href: '/admin/settings', icon: Settings },
     ];
 

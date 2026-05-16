@@ -1,4 +1,6 @@
 const Product = require('../models/Product');
+const Category = require('../models/Category');
+const mongoose = require('mongoose');
 
 // @desc    Get all products with filters
 // @route   GET /api/products
@@ -22,7 +24,19 @@ exports.getProducts = async (req, res, next) => {
 
         // Category filter
         if (category && category !== 'All') {
-            query.category = category;
+            // Check if category is a valid ObjectId
+            if (mongoose.Types.ObjectId.isValid(category)) {
+                query.category = category;
+            } else {
+                // Assume it's a slug
+                const cat = await Category.findOne({ slug: category });
+                if (cat) {
+                    query.category = cat._id;
+                } else {
+                    // If slug doesn't exist, return empty
+                    query.category = new mongoose.Types.ObjectId();
+                }
+            }
         }
 
         // Search filter

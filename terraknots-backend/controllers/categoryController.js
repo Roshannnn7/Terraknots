@@ -91,11 +91,12 @@ exports.deleteCategory = async (req, res, next) => {
         }
 
         // Check if products exist in this category
-        const productCount = await Product.countDocuments({ category: category.name });
+        const productCount = await Product.countDocuments({ category: category._id });
         if (productCount > 0) {
             return res.status(400).json({
                 success: false,
                 message: `Cannot delete. This category has ${productCount} products. Please reassign or delete those products first.`,
+                productCount
             });
         }
 
@@ -117,6 +118,13 @@ exports.reorderCategories = async (req, res, next) => {
     try {
         const { categories } = req.body; // Array of { _id, displayOrder }
 
+        if (!categories || !Array.isArray(categories)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Please provide an array of categories with their new displayOrder',
+            });
+        }
+
         const updatePromises = categories.map((cat) =>
             Category.findByIdAndUpdate(cat._id, { displayOrder: cat.displayOrder })
         );
@@ -126,6 +134,22 @@ exports.reorderCategories = async (req, res, next) => {
         res.status(200).json({
             success: true,
             message: 'Order updated successfully',
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Get products in category
+// @route   GET /api/categories/:id/products
+// @access  Public
+exports.getCategoryProducts = async (req, res, next) => {
+    try {
+        const products = await Product.find({ category: req.params.id, isActive: true });
+        res.status(200).json({
+            success: true,
+            count: products.length,
+            products,
         });
     } catch (error) {
         next(error);

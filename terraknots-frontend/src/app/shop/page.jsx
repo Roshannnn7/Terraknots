@@ -27,20 +27,23 @@ export default function ShopPage() {
     const router = useRouter();
 
     const [products, setProducts] = useState([]);
+    const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(true);
     const [total, setTotal] = useState(0);
     const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
 
+    useEffect(() => {
+        const fetchCats = async () => {
+            try {
+                const { data } = await api.get('/categories');
+                setCategories(data.categories || []);
+            } catch (error) {}
+        };
+        fetchCats();
+    }, []);
+
     const [filters, setFilters] = useState({
-        category: searchParams.get('category') || 'All',
-        search: searchParams.get('search') || '',
-        minPrice: '',
-        maxPrice: '',
-        materials: [],
-        inStock: false,
-        sortBy: searchParams.get('sort') || 'newest',
-        page: 1,
-        limit: 12
+[... lines 35-44 removed for brevity ...]
     });
 
     useEffect(() => {
@@ -192,7 +195,7 @@ export default function ShopPage() {
                             <div className="flex flex-wrap gap-2 mb-6">
                                 {filters.category !== 'All' && (
                                     <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-primary/10 text-primary text-xs font-bold rounded-full">
-                                        Category: {filters.category}
+                                        Category: {categories.find(c => c._id === filters.category)?.name || 'Loading...'}
                                         <button onClick={() => setFilters({ ...filters, category: 'All', page: 1 })}><X size={12} /></button>
                                     </span>
                                 )}

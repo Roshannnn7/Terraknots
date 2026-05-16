@@ -100,10 +100,49 @@ exports.getDashboardStats = async (req, res, next) => {
            revenue: r.revenue
         }));
 
+        // Orders by Category
+        const ordersByCategory = await Order.aggregate([
+            { $unwind: '$items' },
+            {
+                $lookup: {
+                    from: 'products',
+                    localField: 'items.product',
+                    foreignField: '_id',
+                    as: 'productInfo'
+                }
+            },
+            { $unwind: '$productInfo' },
+            {
+                $lookup: {
+                    from: 'categories',
+                    localField: 'productInfo.category',
+                    foreignField: '_id',
+                    as: 'categoryInfo'
+                }
+            },
+            { $unwind: '$categoryInfo' },
+            {
+                $group: {
+                    _id: '$categoryInfo.name',
+                    value: { $sum: 1 }
+                }
+            },
+            { $project: { name: '$_id', value: 1, _id: 0 } }
+        ]);
+
+        const todayStart = new Date();
+        todayStart.setHours(0, 0, 0, 0);
+        const todayRevenueStats = await Order.aggregate([
+            { $match: { paymentStatus: 'paid', createdAt: { $gte: todayStart } } },
+            { $group: { _id: null, total: { $sum: '$totalAmount' } } }
+        ]);
+        const todayRevenue = todayRevenueStats.length > 0 ? todayRevenueStats[0].total : 0;
+
         res.status(200).json({
             success: true,
             stats: {
                 totalRevenue,
+                todayRevenue,
                 totalOrders,
                 totalProducts,
                 totalCustomers,
@@ -113,7 +152,8 @@ exports.getDashboardStats = async (req, res, next) => {
                 lowStockProducts,
                 topSellingProducts: populatedTopProducts,
                 dailyRevenue,
-                monthlyRevenue
+                monthlyRevenue,
+                ordersByCategory
             },
         });
     } catch (error) {

@@ -66,6 +66,9 @@ const adminRoutes = require('./routes/adminRoutes');
 const settingsRoutes = require('./routes/settingsRoutes');
 const uploadRoutes = require('./routes/uploadRoutes');
 const categoryRoutes = require('./routes/categoryRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
+const activityLogRoutes = require('./routes/activityLogRoutes');
+const savedResponseRoutes = require('./routes/savedResponseRoutes');
 
 // Mount routers
 app.use('/api/auth', authRoutes);
@@ -83,6 +86,9 @@ app.use('/api/payment', paymentRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/activity-logs', activityLogRoutes);
+app.use('/api/saved-responses', savedResponseRoutes);
 
 // Root route
 app.get('/', (req, res) => {

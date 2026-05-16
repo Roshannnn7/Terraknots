@@ -76,4 +76,33 @@ router.delete('/image', protect, admin, async (req, res) => {
     }
 });
 
+// @desc    Get all images from Cloudinary
+// @route   GET /api/upload/all
+// @access  Private/Admin
+router.get('/all', protect, admin, async (req, res) => {
+    try {
+        const { resources } = await cloudinary.api.resources({
+            type: 'upload',
+            max_results: 100
+        });
+        
+        res.status(200).json({
+            success: true,
+            images: resources.map(r => ({
+                url: r.secure_url,
+                public_id: r.public_id,
+                format: r.format,
+                size: r.bytes,
+                created_at: r.created_at
+            }))
+        });
+    } catch (error) {
+        console.error('Fetch images error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch media library',
+        });
+    }
+});
+
 module.exports = router;

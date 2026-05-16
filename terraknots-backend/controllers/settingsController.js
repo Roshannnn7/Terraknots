@@ -1,37 +1,15 @@
 const Settings = require('../models/Settings');
 
+// @desc    Get all settings
+// @route   GET /api/settings
+// @access  Public (Partial) / Private (Full)
 exports.getSettings = async (req, res, next) => {
     try {
         let settings = await Settings.findOne();
 
         if (!settings) {
             // Create default settings if none exist
-            settings = await Settings.create({
-                storeName: "TerraKnots",
-                storeTagline: "Handmade with heart, knot by knot",
-                contactEmail: "hello@terraknots.com",
-                whatsappNumber: "91XXXXXXXXXX",
-                instagramUrl: "https://instagram.com/terra_knots",
-                announcementText: "✨ Free shipping above ₹499 • 100% Handmade with love",
-                announcementActive: true,
-                shippingCharge: 49,
-                freeShippingThreshold: 499,
-                codCharge: 30,
-                upiId: "yourname@upi",
-                qrCodeImage: "",
-                upiEnabled: true,
-                codEnabled: true,
-                heroBannerImage: "",
-                heroHeading: "Handmade with heart, knot by knot",
-                heroSubtext: "Discover unique crochet, resin & clay creations",
-                socialLinks: {
-                    instagram: "",
-                    pinterest: "",
-                    facebook: "",
-                    youtube: ""
-                },
-                features: []
-            });
+            settings = await Settings.create({});
         }
 
         res.status(200).json({
@@ -43,6 +21,9 @@ exports.getSettings = async (req, res, next) => {
     }
 };
 
+// @desc    Update settings
+// @route   PUT /api/settings
+// @access  Private/Admin
 exports.updateSettings = async (req, res, next) => {
     try {
         let settings = await Settings.findOne();
@@ -60,6 +41,24 @@ exports.updateSettings = async (req, res, next) => {
         res.status(200).json({
             success: true,
             message: 'Settings updated successfully',
+            settings,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Reset settings to default
+// @route   POST /api/settings/reset
+// @access  Private/Admin
+exports.resetSettings = async (req, res, next) => {
+    try {
+        await Settings.deleteMany({});
+        const settings = await Settings.create({});
+        
+        res.status(200).json({
+            success: true,
+            message: 'Settings reset to defaults',
             settings,
         });
     } catch (error) {

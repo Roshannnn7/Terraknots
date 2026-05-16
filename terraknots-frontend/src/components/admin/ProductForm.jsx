@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
     Upload,
     X,
@@ -43,7 +43,7 @@ const ProductForm = ({ initialData = null, isEdit = false }) => {
 
     const [formData, setFormData] = useState({
         name: initialData?.name || '',
-        category: initialData?.category || '',
+        category: initialData?.category?._id || initialData?.category || '',
         price: initialData?.price || '',
         salePrice: initialData?.salePrice || '',
         stock: initialData?.stock || '',
@@ -145,7 +145,7 @@ const ProductForm = ({ initialData = null, isEdit = false }) => {
                                 >
                                     <option value="">Select Category</option>
                                     {categories.map(cat => (
-                                        <option key={cat._id} value={cat.name}>{cat.name}</option>
+                                        <option key={cat._id} value={cat._id}>{cat.name}</option>
                                     ))}
                                 </select>
                             </div>
