@@ -60,6 +60,7 @@
 @layer base {
   *, *::before, *::after {
     box-sizing: border-box;
+    cursor: auto !important;
   }
 
   html {

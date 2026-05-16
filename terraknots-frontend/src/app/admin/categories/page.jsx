@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import { Edit2, Trash2, Plus, X, Image as ImageIcon, Eye, EyeOff } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
@@ -339,14 +340,14 @@ export default function CategoriesAdminPage() {
                     className="px-3 py-2 bg-[#F5F0EB] text-[#8B7355] rounded-lg text-sm hover:bg-[#F2D7C9] transition-colors"
                     title={cat.isActive ? 'Deactivate' : 'Activate'}
                   >
-                    {cat.isActive ? '👁️' : '🙈'}
+                    {cat.isActive ? <Eye size={18} /> : <EyeOff size={18} />}
                   </button>
                   <button
                     onClick={() => handleDelete(cat)}
                     className="px-3 py-2 bg-red-50 text-red-600 rounded-lg text-sm hover:bg-red-100 transition-colors"
                     title="Delete"
                   >
-                    🗑️
+                    <Trash2 size={18} />
                   </button>
                 </div>
               </div>
@@ -385,29 +386,19 @@ export default function CategoriesAdminPage() {
                 </label>
                 
                 {formData.image ? (
-                  <div className="relative">
-                    <img 
-                      src={formData.image} 
-                      alt="Banner"
-                      className="w-full h-48 object-cover rounded-xl"
-                    />
-                    <button
-                      type="button"
-                      onClick={removeImage}
-                      className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-red-600"
-                    >
-                      ×
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="absolute bottom-2 right-2 bg-white text-[#8B7355] px-3 py-1 rounded-full text-sm font-semibold hover:bg-[#F5F0EB]"
-                    >
-                      🔄 Change
-                    </button>
+                  <div className="relative group rounded-2xl overflow-hidden aspect-[16/9] shadow-lg border border-gray-100">
+                    <img src={formData.image} alt="Banner" className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center gap-4">
+                      <button type="button" onClick={() => fileInputRef.current?.click()} className="p-3 bg-white text-dark rounded-full hover:scale-110 transition-transform">
+                        <Edit2 size={20}/>
+                      </button>
+                      <button type="button" onClick={removeImage} className="p-3 bg-red-500 text-white rounded-full hover:scale-110 transition-transform">
+                        <Trash2 size={20}/>
+                      </button>
+                    </div>
                   </div>
                 ) : (
-                  <label className="block border-2 border-dashed border-gray-300 rounded-2xl p-8 text-center cursor-pointer hover:border-[#C4A882] hover:bg-[#F5F0EB]/50 transition-all">
+                  <label className="block border-2 border-dashed border-gray-200 rounded-2xl p-12 text-center cursor-pointer hover:border-[#C4A882] hover:bg-[#F5F0EB]/50 transition-all">
                     <input
                       ref={fileInputRef}
                       type="file"
@@ -416,15 +407,14 @@ export default function CategoriesAdminPage() {
                       className="hidden"
                       disabled={uploading}
                     />
-                    <div className="text-4xl mb-2">🖼️</div>
-                    <p className="font-semibold text-[#2C2C2C]">
+                    <div className="w-16 h-16 bg-[#F5F0EB] rounded-2xl flex items-center justify-center mx-auto mb-4 text-[#C4A882]">
+                      <Plus size={32}/>
+                    </div>
+                    <p className="text-sm font-bold text-dark">
                       {uploading ? 'Uploading...' : 'Click to upload banner'}
                     </p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      or drag & drop • JPG, PNG, WEBP, GIF (max 10MB)
-                    </p>
-                    <p className="text-xs text-gray-400 mt-2">
-                      Recommended: 1200×600px
+                    <p className="text-[10px] text-light mt-1 uppercase tracking-widest">
+                      JPG, PNG, WEBP (Max 10MB)
                     </p>
                   </label>
                 )}
