@@ -147,9 +147,14 @@ const AdminSettingsPage = () => {
         { id: 'tools', label: 'Tools', icon: Settings2 },
     ];
 
+    // SAFE FALLBACKS
+    const safeSettings = settings || {};
+    const safeFeatures = safeSettings.features || [];
+    const safeColors = safeSettings.colors || {};
+
     // Safe access helper
     const getVal = (path, fallback = '') => {
-      return path.split('.').reduce((obj, key) => (obj && obj[key] !== undefined) ? obj[key] : fallback, settings);
+      return path.split('.').reduce((obj, key) => (obj && obj[key] !== undefined) ? obj[key] : fallback, safeSettings);
     };
 
     return (

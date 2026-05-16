@@ -35,7 +35,6 @@ const AdminSidebar = () => {
         { name: 'Coupons', href: '/admin/coupons', icon: Ticket },
         { name: 'Newsletter', href: '/admin/newsletter', icon: Mail },
         { name: 'Media Library', href: '/admin/media', icon: ImageIcon },
-        { name: 'Finance', href: '/admin/finance', icon: LayoutDashboard },
         { name: 'Activity Log', href: '/admin/activity-log', icon: MessageSquare },
         { name: 'Settings', href: '/admin/settings', icon: Settings },
     ];

@@ -12,6 +12,7 @@ import MobileBottomNav from '@/components/layout/MobileBottomNav';
 import CustomCursor from '@/components/ui/CustomCursor';
 import ScrollProgressBar from '@/components/ui/ScrollProgressBar';
 import SocialProofPopup from '@/components/ui/SocialProofPopup';
+import BackendWarmer from '@/components/BackendWarmer';
 
 const playfair = Playfair_Display({
     subsets: ['latin'],
@@ -70,6 +71,7 @@ export default function RootLayout({ children }) {
     return (
         <html lang="en">
             <body className={`${playfair.variable} ${poppins.variable} ${dancing.variable} font-body bg-background text-dark antialiased`}>
+                <BackendWarmer />
                 <AuthProvider>
                     <CartProvider>
                         <WishlistProvider>

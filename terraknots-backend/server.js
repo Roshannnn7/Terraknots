@@ -50,6 +50,15 @@ const limiter = rateLimit({
 });
 app.use('/api/auth', limiter);
 
+// Health check — prevents Render cold start
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', uptime: process.uptime() });
+});
+
+app.get('/api/ping', (req, res) => {
+  res.send('pong');
+});
+
 // Route files
 const authRoutes = require('./routes/authRoutes');
 const productRoutes = require('./routes/productRoutes');
@@ -116,6 +125,16 @@ const server = app.listen(PORT, () => {
         `🚀 Server running in ${process.env.NODE_ENV} mode on port ${PORT}`
     );
 });
+
+// Self-ping every 14 minutes to prevent Render sleep
+if (process.env.NODE_ENV === 'production') {
+  setInterval(() => {
+    const url = process.env.RENDER_EXTERNAL_URL || 'https://terraknots-backend.onrender.com';
+    fetch(`${url}/api/health`)
+      .then(() => console.log('Self-ping successful'))
+      .catch(err => console.log('Self-ping failed:', err.message));
+  }, 14 * 60 * 1000); // 14 minutes
+}
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err, promise) => {
