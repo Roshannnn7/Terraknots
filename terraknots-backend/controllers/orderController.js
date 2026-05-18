@@ -85,7 +85,7 @@ exports.createOrder = async (req, res, next) => {
         // Calculate COD charge
         let codCharge = 0;
         if (paymentMethod === 'cod') {
-            codCharge = settings.codCharge;
+            codCharge = settings.codPayment?.charge ?? settings.codCharge ?? 30;
         }
 
         // Calculate total

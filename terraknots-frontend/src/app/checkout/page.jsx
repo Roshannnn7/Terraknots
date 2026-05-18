@@ -19,7 +19,7 @@ import { CreditCard, Truck, ChevronRight, ShieldCheck, CheckCircle2 } from 'luci
 const CheckoutPage = () => {
     const router = useRouter();
     const { cart, cartTotal, clearCart } = useCart();
-    const { user, isAuthenticated } = useAuth();
+    const { user, isAuthenticated, loading: authLoading } = useAuth();
 
     const [loading, setLoading] = useState(false);
     const [shippingInfo, setShippingInfo] = useState({
@@ -35,6 +35,13 @@ const CheckoutPage = () => {
     const [couponData, setCouponData] = useState(null);
     const [guestEmail, setGuestEmail] = useState('');
     const [transactionId, setTransactionId] = useState('');
+
+    useEffect(() => {
+        if (!authLoading && !isAuthenticated) {
+            toast.info('Please log in to proceed to checkout');
+            router.push('/login?redirect=/checkout');
+        }
+    }, [isAuthenticated, authLoading, router]);
 
     useEffect(() => {
         const fetchSettings = async () => {
@@ -71,7 +78,7 @@ const CheckoutPage = () => {
     const calculateFinalTotal = () => {
         let total = cartTotal;
         let shipping = settings ? (cartTotal >= settings.freeShippingThreshold ? 0 : settings.shippingCharge) : 0;
-        let cod = (paymentMethod === 'COD' && settings) ? settings.codCharge : 0;
+        let cod = (paymentMethod === 'COD' && settings) ? (settings.codPayment?.charge ?? settings.codCharge ?? 30) : 0;
 
         let discount = 0;
         if (couponData) {
@@ -217,6 +224,14 @@ const CheckoutPage = () => {
         }
     };
 
+    if (authLoading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-background">
+                <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+            </div>
+        );
+    }
+
     return (
         <>
             <AnnouncementBar />
@@ -338,7 +353,7 @@ const CheckoutPage = () => {
                                             {paymentMethod === 'COD' && <CheckCircle2 size={20} className="text-primary" />}
                                         </div>
                                         <h4 className="font-bold text-dark text-sm">COD</h4>
-                                        <p className="text-[10px] text-light mt-1">₹{settings?.codCharge || 30} fee</p>
+                                        <p className="text-[10px] text-light mt-1">₹{settings?.codPayment?.charge ?? settings?.codCharge ?? 30} fee</p>
                                     </button>
                                 </div>
 
@@ -443,7 +458,7 @@ const CheckoutPage = () => {
                                     {paymentMethod === 'COD' && (
                                         <div className="flex justify-between text-sm text-light">
                                             <span>COD Surcharge</span>
-                                            <span className="text-dark font-medium">{formatPrice(settings?.codCharge || 30)}</span>
+                                            <span className="text-dark font-medium">{formatPrice(settings?.codPayment?.charge ?? settings?.codCharge ?? 30)}</span>
                                         </div>
                                     )}
                                     {couponData && (

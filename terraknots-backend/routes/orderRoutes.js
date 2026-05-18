@@ -14,7 +14,7 @@ const {
 const { protect, optionalAuth } = require('../middleware/auth');
 const { admin } = require('../middleware/admin');
 
-router.post('/', optionalAuth, createOrder);
+router.post('/', protect, createOrder);
 router.post('/track', trackOrder);
 router.get('/my-orders', protect, getMyOrders);
 router.get('/stats/summary', protect, admin, getOrderStats);
