@@ -136,28 +136,31 @@ exports.createOrder = async (req, res, next) => {
             });
         }
 
-        // Send confirmation email
-        try {
-            const emailTo = req.user ? req.user.email : req.body.guestEmail;
-            const emailHtml = getOrderConfirmationEmail(order);
-            
-            // Send to customer
-            await sendEmail({
-                email: emailTo,
-                subject: `Order Confirmation - ${order.orderId}`,
-                html: emailHtml,
-            });
+        // Send confirmation email asynchronously (background task)
+        const sendEmailBackground = async () => {
+            try {
+                const emailTo = req.user ? req.user.email : req.body.guestEmail;
+                const emailHtml = getOrderConfirmationEmail(order);
+                
+                // Send to customer
+                await sendEmail({
+                    email: emailTo,
+                    subject: `Order Confirmation - ${order.orderId}`,
+                    html: emailHtml,
+                });
 
-            // Send notification to Admin
-            const adminEmail = process.env.ADMIN_EMAIL || settings.contactEmail || process.env.SMTP_USER || 'terraknots.in@gmail.com';
-            await sendEmail({
-                email: adminEmail,
-                subject: `NEW ORDER RECEIVED! - ${order.orderId}`,
-                html: getAdminOrderNotificationEmail(order),
-            });
-        } catch (emailError) {
-            console.error('Error sending order confirmation emails:', emailError);
-        }
+                // Send notification to Admin
+                const adminEmail = process.env.ADMIN_EMAIL || settings.contactEmail || process.env.SMTP_USER || 'terraknots.in@gmail.com';
+                await sendEmail({
+                    email: adminEmail,
+                    subject: `NEW ORDER RECEIVED! - ${order.orderId}`,
+                    html: getAdminOrderNotificationEmail(order),
+                });
+            } catch (emailError) {
+                console.error('Error sending order confirmation emails in background:', emailError);
+            }
+        };
+        sendEmailBackground();
 
         res.status(201).json({
             success: true,
