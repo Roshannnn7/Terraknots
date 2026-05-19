@@ -99,6 +99,16 @@ const CheckoutPage = () => {
             return toast.error('Please fill all shipping details');
         }
 
+        const pincodeRegex = /^[1-9][0-9]{5}$/;
+        if (!pincodeRegex.test(pincode)) {
+            return toast.error('Please enter a valid 6-digit pincode');
+        }
+
+        const phoneRegex = /^[6-9]\d{9}$/;
+        if (!phoneRegex.test(phone)) {
+            return toast.error('Please enter a valid 10-digit phone number');
+        }
+
         if (!isAuthenticated && !guestEmail) {
             return toast.error('Please provide an email for order updates');
         }
@@ -303,7 +313,10 @@ const CheckoutPage = () => {
                                         <input
                                             type="text"
                                             value={shippingInfo.pincode}
-                                            onChange={(e) => setShippingInfo({ ...shippingInfo, pincode: e.target.value })}
+                                            onChange={(e) => {
+                                                const val = e.target.value.replace(/\D/g, '').slice(0, 6);
+                                                setShippingInfo({ ...shippingInfo, pincode: val });
+                                            }}
                                             className="input-field"
                                             placeholder="6 digit PIN"
                                         />
@@ -313,7 +326,10 @@ const CheckoutPage = () => {
                                         <input
                                             type="text"
                                             value={shippingInfo.phone}
-                                            onChange={(e) => setShippingInfo({ ...shippingInfo, phone: e.target.value })}
+                                            onChange={(e) => {
+                                                const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                                                setShippingInfo({ ...shippingInfo, phone: val });
+                                            }}
                                             className="input-field"
                                             placeholder="10 digit mobile number"
                                         />

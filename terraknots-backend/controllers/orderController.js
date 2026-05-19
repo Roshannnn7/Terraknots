@@ -3,6 +3,7 @@ const Product = require('../models/Product');
 const Coupon = require('../models/Coupon');
 const Settings = require('../models/Settings');
 const { sendEmail, getOrderConfirmationEmail, getAdminOrderNotificationEmail } = require('../utils/sendEmail');
+const { validateOrder } = require('../utils/validators');
 
 // @desc    Create new order
 // @route   POST /api/orders
@@ -23,6 +24,15 @@ exports.createOrder = async (req, res, next) => {
             return res.status(400).json({
                 success: false,
                 message: 'No order items provided',
+            });
+        }
+
+        // Validate shipping details format
+        const { valid, errors } = validateOrder(req.body);
+        if (!valid) {
+            return res.status(400).json({
+                success: false,
+                message: errors.join(', '),
             });
         }
 

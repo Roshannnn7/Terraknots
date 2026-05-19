@@ -50,6 +50,21 @@ const AccountPage = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        if (formData.phone) {
+            const phoneRegex = /^[6-9]\d{9}$/;
+            if (!phoneRegex.test(formData.phone)) {
+                return toast.error('Please enter a valid 10-digit phone number');
+            }
+        }
+
+        if (formData.address && formData.address.pincode) {
+            const pincodeRegex = /^[1-9][0-9]{5}$/;
+            if (!pincodeRegex.test(formData.address.pincode)) {
+                return toast.error('Please enter a valid 6-digit pincode');
+            }
+        }
+
         setLoading(true);
         try {
             await updateProfile(formData);
@@ -138,8 +153,9 @@ const AccountPage = () => {
                                             <input
                                                 type="text"
                                                 value={formData.phone}
-                                                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                                                onChange={(e) => setFormData({ ...formData, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
                                                 className="input-field"
+                                                placeholder="10 digit mobile number"
                                             />
                                         </div>
                                     </div>
@@ -195,7 +211,7 @@ const AccountPage = () => {
                                                     value={formData.address.pincode}
                                                     onChange={(e) => setFormData({
                                                         ...formData,
-                                                        address: { ...formData.address, pincode: e.target.value }
+                                                        address: { ...formData.address, pincode: e.target.value.replace(/\D/g, '').slice(0, 6) }
                                                     })}
                                                     className="input-field"
                                                 />

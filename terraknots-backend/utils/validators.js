@@ -86,6 +86,10 @@ exports.validateOrder = (data) => {
         if (data.shippingAddress.pincode && !exports.validatePincode(data.shippingAddress.pincode)) {
             errors.push('Invalid pincode format');
         }
+
+        if (data.shippingAddress.phone && !exports.validatePhone(data.shippingAddress.phone)) {
+            errors.push('Invalid phone number format');
+        }
     }
 
     if (!data.paymentMethod) {

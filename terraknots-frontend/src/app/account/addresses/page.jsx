@@ -45,6 +45,17 @@ export default function AddressesPage() {
 
     const handleSave = async (e) => {
         e.preventDefault();
+
+        const pincodeRegex = /^[1-9][0-9]{5}$/;
+        if (!pincodeRegex.test(formData.pincode)) {
+            return toast.error('Please enter a valid 6-digit pincode');
+        }
+
+        const phoneRegex = /^[6-9]\d{9}$/;
+        if (!phoneRegex.test(formData.phone)) {
+            return toast.error('Please enter a valid 10-digit phone number');
+        }
+
         setSaving(true);
         try {
             if (editId) {
@@ -154,8 +165,8 @@ export default function AddressesPage() {
                                     </div>
                                     <div>
                                         <label className="text-xs font-bold uppercase tracking-widest text-light mb-1 block">Phone</label>
-                                        <input required value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })}
-                                            placeholder="+91 XXXXX XXXXX" className="input-field" />
+                                        <input required value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+                                            placeholder="10 digit mobile number" className="input-field" />
                                     </div>
                                     <div className="sm:col-span-2">
                                         <label className="text-xs font-bold uppercase tracking-widest text-light mb-1 block">Street Address</label>
@@ -174,8 +185,8 @@ export default function AddressesPage() {
                                     </div>
                                     <div>
                                         <label className="text-xs font-bold uppercase tracking-widest text-light mb-1 block">Pincode</label>
-                                        <input required value={formData.pincode} onChange={e => setFormData({ ...formData, pincode: e.target.value })}
-                                            placeholder="400001" className="input-field" maxLength={6} />
+                                        <input required value={formData.pincode} onChange={e => setFormData({ ...formData, pincode: e.target.value.replace(/\D/g, '').slice(0, 6) })}
+                                            placeholder="6 digit PIN" className="input-field" />
                                     </div>
                                     <div className="flex items-center gap-3">
                                         <input type="checkbox" id="isDefault" checked={formData.isDefault}
