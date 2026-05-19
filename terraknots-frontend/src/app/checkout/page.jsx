@@ -62,6 +62,15 @@ const CheckoutPage = () => {
             });
         }
     }, [user]);
+ 
+    // Auto-invalidate coupon if cart total falls below minimum order amount
+    useEffect(() => {
+        if (couponData && cartTotal < (couponData.minOrderAmount || 0)) {
+            setCouponData(null);
+            setCouponCode('');
+            toast.warn(`Coupon removed as cart total is below the minimum order amount of ₹${couponData.minOrderAmount}`);
+        }
+    }, [cartTotal, couponData]);
 
     const validateCoupon = async () => {
         if (!couponCode) return;

@@ -76,6 +76,7 @@ exports.validateCoupon = async (req, res, next) => {
                 code: coupon.code,
                 discountType: coupon.discountType,
                 discountValue: coupon.discountValue,
+                minOrderAmount: coupon.minOrderAmount,
             },
         });
     } catch (error) {
